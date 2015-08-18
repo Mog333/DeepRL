@@ -55,8 +55,8 @@ def run_experiment(args):
         if not os.path.isdir(experimentDirectory):
             os.mkdir(experimentDirectory)
 
-        resultsFile = open(resultsFileName, "a+")
-        resultsFile.write("Epoch,\tAverageReward,\tMean Q Value")
+        resultsFile = open(resultsFileName, "a")
+        resultsFile.write("Epoch,\tAverageReward,\tMean Q Value\n")
         resultsFile.close()
 
         parametersFile = open(experimentDirectory + "parameters.pkl" , 'wb', -1)
@@ -70,7 +70,7 @@ def run_experiment(args):
             parameters.nnFile += "/"
 
         experimentDirectory = parameters.nnFile
-        resultsFile = experimentDirectory + "results.csv"
+        resultsFileName = experimentDirectory + "results.csv"
 
         if os.path.exists(experimentDirectory + "parameters.pkl"):
             parametersFile = open(experimentDirectory + "parameters.pkl" , 'rb')
@@ -84,7 +84,7 @@ def run_experiment(args):
         contents = os.listdir(experimentDirectory)
         networkFiles = []
         for handle in contents:
-            if handle.endswith(".pkl"):
+            if handle.startswith("network") and handle.endswith(".pkl"):
                 networkFiles.append(handle)
 
         if len(networkFiles) == 0:
@@ -106,6 +106,7 @@ def run_experiment(args):
                 parameters.epsilonStart = parameters.epsilonEnd
 
             parameters.nnFile = experimentDirectory + highestNNFile
+            print "Loaded experiment: " + experimentDirectory + "\nLoaded network file:" + highestNNFile
 
 
     sys.setrecursionlimit(10000)
@@ -150,11 +151,11 @@ def run_experiment(args):
 
         if parameters.stepsPerTest > 0:
             agent.startEvaluationEpoch(epoch)
-            avgReward = runEvaluationEpoch(ale, agent, apoch, parameters.stepsPerTest)
+            avgReward = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest)
             holdoutQVals = agent.computeHoldoutQValues(3200)
 
-            resultsFile = open(resultsFileName, '+a')
-            resultsFile.write(str(epoch) + ",\t" + str(avgReward) + ",\t" + str(holdoutQVals))
+            resultsFile = open(resultsFileName, 'a')
+            resultsFile.write(str(epoch) + ",\t" + str(round(avgReward, 4)) + ",\t\t" + str(round(holdoutQVals, 4)) + "\n")
             resultsFile.close()
 
             agent.endEvaluationEpoch(epoch)
@@ -164,6 +165,7 @@ def run_experiment(args):
 def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch):
     stepsRemaining = stepsPerEpoch
     numEpisodes = 0
+    print "Starting Training epoch: " + str(epoch)
     while stepsRemaining > 0:
         numEpisodes += 1
         startTime = time.time()
@@ -171,13 +173,14 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch):
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
-        print "TRAINING: steps Left: " + str(stepsRemaining) + " steps taken:" + str(stepsTaken) + " fps: "+str(fps) + " episode reward: " +str(epsiodeReward) + " avgLoss: " + str(avgLoss)        
+        print "TRAINING: Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
 
 
 def runEvaluationEpoch(ale, agent, epoch, stepsPerTest):
     stepsRemaining = stepsPerTest
     numEpisodes = 0
     totalReward = 0
+    print "Starting Evaluation epoch: " + str(epoch)
     while stepsRemaining > 0:
         numEpisodes += 1
         startTime = time.time()
@@ -185,8 +188,8 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest):
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
-        totalReward += epsiodeReward        
-        print "EVALUATING: steps Left: " + str(stepsRemaining) + " steps taken:" + str(stepsTaken) + " fps: "+str(fps) + " episode reward: " +str(epsiodeReward) + " avgLoss: " + str(avgLoss)        
+        totalReward += epsiodeReward    
+        print "EVALUATING: Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)            
         
 
     averageEpisodeReward = float(totalReward) / numEpisodes

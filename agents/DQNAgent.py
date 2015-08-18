@@ -177,11 +177,9 @@ class DQNAgent(object):
     def endTrainingEpoch(self, epochNumber):
         pass
         
-
     def startEvaluationEpoch(self, epochNumber):
         self.training       = False
         self.episodeCounter = 0
-
 
     def endEvaluationEpoch(self, epochNumber):
         pass
