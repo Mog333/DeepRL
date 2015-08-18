@@ -7,3 +7,10 @@ Human-level control through deep reinforcement learning.
 Nature, 518(7540):529-533, February 2015
 
 
+Example command to run:
+
+THEANO_FLAGS='device=cpu,floatX=float32' python run_dqn.py --seed 666 --steps-per-epoch 2500 --test-length 2500 --max-history 10000 --replay-start-size 1000
+
+OR specify cudnn / atlas blas library:
+
+THEANO_FLAGS='blas.ldflags=-lf77blas -latlas -lgfortran,device=gpu,floatX=float32,optimizer_including=cudnn' python run_dqn.py --rom breakout --base-rom-path ../roms
