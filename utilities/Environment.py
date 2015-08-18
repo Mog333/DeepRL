@@ -1,0 +1,21 @@
+import sys
+
+''' Set USE_SDL to true to display the screen. ALE must be compilied
+   with SDL enabled for this to work. On OSX, pygame init is used to
+   proxy-call SDL_main. '''
+def initializeSDL(ale):
+  if sys.platform == 'darwin':
+    import pygame
+    pygame.init()
+    ale.setBool('sound', False) # Sound doesn't work on OSX
+  elif sys.platform.startswith('linux'):
+    ale.setBool('sound', True)
+  ale.setBool('display_screen', True)
+
+def initializeALEParameters(ale, seed, frameSkip, repeatActionProbability, initSDL = False):
+    ale.setInt("random_seed", seed)
+    ale.setInt("frame_skip", frameSkip)
+    ale.setFloat("repeat_action_probability", repeatActionProbability)
+
+    if initSDL:
+        initializeSDL(ale)

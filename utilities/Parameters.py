@@ -1,0 +1,190 @@
+'''
+Author Robert Post
+
+Parameters based on code from Nathan Sprague
+from: https://github.com/spragunr/deep_q_rl
+
+'''
+
+import argparse
+import os
+import sys
+
+
+class Parameters:
+    # ----------------------
+    # Experiment Parameters
+    # ----------------------
+    STEPS_PER_EPOCH = 250000
+    EPOCHS = 200
+    STEPS_PER_TEST = 125000
+
+
+    # ----------------------
+    # ALE Parameters
+    # ----------------------
+    BASE_ROM_PATH = "../ALE/roms/"
+    ROM = 'breakout.bin'
+    FRAME_SKIP = 4
+    SEED = 33
+
+    IMAGE_WIDTH = 160
+    IMAGE_HEIGHT = 210
+    REPEAT_ACTION_PROBABILITY = 0.00
+
+
+    # ----------------------
+    # Agent/Network parameters:
+    # ----------------------
+    UPDATE_RULE = 'deepmind_rmsprop'
+    BATCH_ACCUMULATOR = 'sum'
+    CROPPED_WIDTH = 84
+    CROPPED_HEIGHT = 84
+    LEARNING_RATE = .00025
+    DISCOUNT_RATE = .99
+    RMS_RHO = .95 # (Rho)
+    RMS_EPSILON = .01
+    MOMENTUM = 0 # Note that the "momentum" value mentioned in the Nature
+                 # paper is not used in the same way as a traditional momentum
+                 # term.  It is used to track gradient for the purpose of
+                 # estimating the standard deviation. This package uses
+                 # rho/RMS_DECAY to track both the history of the gradient
+                 # and the squared gradient.
+    EPSILON_START = 1.0
+    EPSILON_END = .1
+    EPSILON_DECAY_STEPS = 1000000
+    EVAL_EPSILON = .05
+    PHI_LENGTH = 4
+    UPDATE_FREQUENCY = 4
+    REPLAY_MEMORY_SIZE = 1000000
+    BATCH_SIZE = 32
+    NETWORK_TYPE = "conv"
+    NETWORK_UPDATE_DELAY = 10000
+    REPLAY_START_SIZE = 50000
+    LOAD_WEIGHTS_FLIPPED = False
+
+def processArguments(args, description):
+    """
+    Handle the command line.
+
+    args     - list of command line arguments (not including executable name)
+    defaults - a name space with variables corresponding to each of
+               the required default command line values.
+    """
+    defaults = Parameters
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-r', '--rom', dest="rom", default=defaults.ROM,
+                        help='ROM to run (default: %(default)s)')
+
+    parser.add_argument('--base-rom-path', dest="baseRomPath", default=defaults.BASE_ROM_PATH,
+                        help='Where to find the ROMS (default: %(default)s)')
+
+    parser.add_argument('-e', '--epochs', dest="epochs", type=int,
+                        default=defaults.EPOCHS,
+                        help='Number of training epochs (default: %(default)s)')
+    parser.add_argument('-s', '--steps-per-epoch', dest="stepsPerEpoch",
+                        type=int, default=defaults.STEPS_PER_EPOCH,
+                        help='Number of steps per epoch (default: %(default)s)')
+    parser.add_argument('-t', '--test-length', dest="stepsPerTest",
+                        type=int, default=defaults.STEPS_PER_TEST,
+                        help='Number of steps per test (default: %(default)s)')
+    parser.add_argument('--cropped-height', dest="croppedHeight",
+                        type=int, default=defaults.CROPPED_HEIGHT,
+                        help='Desired cropped screen height (default: %(default)s)')
+    parser.add_argument('--cropped-width', dest="croppedWidth",
+                        type=int, default=defaults.CROPPED_WIDTH,
+                        help='Desired cropped screen width (default: %(default)s)')
+    parser.add_argument('--merge', dest="mergeFrames", default=False,
+                        action="store_true", help='Tell ALE to send the averaged frames')
+    parser.add_argument('--display-screen', dest="displayScreen",
+                        action='store_true', default=False,
+                        help='Show the game screen.')
+    parser.add_argument('--experiment-prefix', dest="experimentPrefix",
+                        default=None,
+                        help='Experiment name prefix ' + '(default is the name of the game)')
+    parser.add_argument('--frame-skip', dest="frameSkip",
+                        default=defaults.FRAME_SKIP, type=int,
+                        help='Every how many frames to process ' + 
+                        '(default: %(default)s)')
+    parser.add_argument('--update-rule', dest="updateRule",
+                        type=str, default=defaults.UPDATE_RULE,
+                        help=('deepmind_rmsprop|rmsprop|sgd ' +
+                              '(default: %(default)s)'))
+    parser.add_argument('--batch-accumulator', dest="batchAccumulator",
+                        type=str, default=defaults.BATCH_ACCUMULATOR,
+                        help=('sum|mean (default: %(default)s)'))
+    parser.add_argument('--learning-rate', dest="learningRate",
+                        type=float, default=defaults.LEARNING_RATE,
+                        help='Learning rate (default: %(default)s)')
+    parser.add_argument('--rms-decay', dest="rmsRho",
+                        type=float, default=defaults.RMS_RHO,
+                        help='Decay rate for rms_prop (default: %(default)s)')
+    parser.add_argument('--rms-epsilon', dest="rmsEpsilon",
+                        type=float, default=defaults.RMS_EPSILON,
+                        help='Denominator epsilson for rms_prop ' +
+                        '(default: %(default)s)')
+    parser.add_argument('--momentum', type=float, default=defaults.MOMENTUM,
+                        help=('Momentum term for Nesterov momentum. '+
+                              '(default: %(default)s)'))
+    parser.add_argument('--discount', dest='discountRate', type=float, default=defaults.DISCOUNT_RATE,
+                        help='Discount rate')
+    parser.add_argument('--epsilon-start', dest="epsilonStart",
+                        type=float, default=defaults.EPSILON_START,
+                        help=('Starting value for epsilon. ' +
+                              '(default: %(default)s)'))
+    parser.add_argument('--epsilon-end', dest="epsilonEnd",
+                        type=float, default=defaults.EPSILON_END,
+                        help='Final epsilon value. (default: %(default)s)')
+    parser.add_argument('--eval-epsilon', dest="evalEpsilon",
+                        type=float, default=defaults.EVAL_EPSILON,
+                        help='Evaluation epsilon value. (default: %(default)s)')
+    parser.add_argument('--epsilon-decay-steps', dest="epsilonDecaySteps",
+                        type=float, default=defaults.EPSILON_DECAY_STEPS,
+                        help=('Number of steps to anneal epsilon. ' +
+                              '(default: %(default)s)'))
+    parser.add_argument('--phi-length', dest="phiLength",
+                        type=int, default=defaults.PHI_LENGTH,
+                        help=('Number of recent frames used to represent ' +
+                              'state. (default: %(default)s)'))
+    parser.add_argument('--max-history', dest="replayMemorySize",
+                        type=int, default=defaults.REPLAY_MEMORY_SIZE,
+                        help=('Maximum number of steps stored in replay ' +
+                              'memory. (default: %(default)s)'))
+    parser.add_argument('--batch-size', dest="batchSize",
+                        type=int, default=defaults.BATCH_SIZE,
+                        help='Batch size. (default: %(default)s)')
+    parser.add_argument('--network-type', dest="networkType",
+                        type=str, default=defaults.NETWORK_TYPE,
+                        help=('nips_cuda|nips_dnn|nature_cuda|nature_dnn' +
+                              '|linear (default: %(default)s)'))
+    parser.add_argument('--network-update-delay', dest="networkUpdateDelay",
+                        type=int, default=defaults.NETWORK_UPDATE_DELAY,
+                        help=('Interval between target updates. ' +'(default: %(default)s)'))
+    parser.add_argument('--update-frequency', dest="updateFrequency",
+                        type=int, default=defaults.UPDATE_FREQUENCY,
+                        help=('Number of actions before each SGD update. '+ '(default: %(default)s)'))
+    parser.add_argument('--replay-start-size', dest="replayStartSize",
+                        type=int, default=defaults.REPLAY_START_SIZE,
+                        help=('Number of random steps before training. ' + '(default: %(default)s)'))
+    parser.add_argument('--nn-file', dest="nnFile", type=str, default=None,
+                        help='Pickle file containing trained net.')
+    parser.add_argument('--pause', dest="pause", type=float, default=0,
+                        help='Amount of time to pause display while testing.')
+
+    parser.add_argument('--seed', dest="seed", type=int, default=defaults.SEED,
+                        help='Seed for ALE.')
+
+    parser.add_argument('--repeat-action-probability', dest="repeatActionProbability", type=float, default=defaults.REPEAT_ACTION_PROBABILITY,
+                        help='Repeat Action probability stochasisity in the ALE by randomly using the previous action.')
+
+    parser.add_argument('--loadWeightsFlipped', dest="loadWeightsFlipped", type=int, default=defaults.LOAD_WEIGHTS_FLIPPED,
+                        help='Load network conv weights fipped.')
+
+    parameters = parser.parse_args(args)
+
+    if not parameters.rom.endswith(".bin"):
+        parameters.rom = parameters.rom + ".bin"
+
+    parameters.fullRomPath = os.path.join(parameters.baseRomPath, parameters.rom)
+
+    return parameters
