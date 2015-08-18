@@ -167,7 +167,6 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch):
     while stepsRemaining > 0:
         numEpisodes += 1
         startTime = time.time()
-
         stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining)
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
@@ -196,8 +195,6 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest):
 
 
 def runEpisode(ale, agent, stepsRemaining):
-    originalNumberOfLives = ale.lives()
-
     framesElapsed       = 0
     totalEpisodeReward  = 0
     ale_game_over       = False
@@ -205,7 +202,6 @@ def runEpisode(ale, agent, stepsRemaining):
     screenObservation = ale.getScreenRGB()
 
     preprocessedObservation = Preprocessing.preprocessALEObservation(screenObservation, agent.inputHeight, agent.inputWidth)
-
     action = agent.startEpisode(preprocessedObservation)
 
     while not ale_game_over and framesElapsed < stepsRemaining:
@@ -214,7 +210,7 @@ def runEpisode(ale, agent, stepsRemaining):
         reward = ale.act(action)
         totalEpisodeReward += reward
 
-        if ale.game_over():# or ale.lives() != originalNumberOfLives:
+        if ale.game_over():
           ale_game_over = True
 
         screenObservation = ale.getScreenRGB()

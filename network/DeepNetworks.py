@@ -24,7 +24,8 @@ def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutput
         if convImplementation == "conv":
             convFunction = lasagne.layers.conv.Conv2DLayer
         elif convImplementation == "dnn":
-            convFunction = lasagne.layers.dnn.Conv2DDNNLayer
+            from lasagne.layers import dnn
+            convFunction = dnn.Conv2DDNNLayer
 
         conv1 = convFunction(
             networkInput, 
@@ -54,7 +55,8 @@ def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutput
             b = lasagne.init.Constant(.1))
 
     elif convImplementation == "cuda":
-        convFunction = lasagne.layers.cuda_convnet.Conv2DCCLayer
+        from lasagne.layers import cuda_convnet
+        convFunction = cuda_convnet.Conv2DCCLayer
         dimshuffle = True
         c01b=True
 

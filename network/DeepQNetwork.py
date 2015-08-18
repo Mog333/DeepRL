@@ -36,7 +36,7 @@ class DeepQNetwork(object):
         self.updateCounter      = 0
 
         states     = T.tensor4("states")
-        nextStates = T.tensor4("states")
+        nextStates = T.tensor4("nextStates")
         rewards    = T.col("rewards")
         actions    = T.icol("actions")
         terminals  = T.icol("terminals")

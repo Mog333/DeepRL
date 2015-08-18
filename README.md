@@ -11,6 +11,6 @@ Example command to run:
 
 THEANO_FLAGS='device=cpu,floatX=float32' python run_dqn.py --seed 666 --steps-per-epoch 2500 --test-length 2500 --max-history 10000 --replay-start-size 1000
 
-OR specify cudnn / atlas blas library:
+OR specify cudnn / atlas blas library, and use CUDNN v3 timing for selecting conv implementation:
 
-THEANO_FLAGS='blas.ldflags=-lf77blas -latlas -lgfortran,device=gpu,floatX=float32,optimizer_including=cudnn' python run_dqn.py --rom breakout --base-rom-path ../roms
+THEANO_FLAGS='blas.ldflags=-lf77blas -latlas -lgfortran,device=gpu,floatX=float32,optimizer_including=cudnn,dnn.conv.algo_fwd=time_once,dnn.conv.algo_bwd=time_once' python run_dqn.py --rom breakout --base-rom-path ../roms --network-type dnn

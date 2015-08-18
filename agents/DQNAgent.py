@@ -79,6 +79,7 @@ class DQNAgent(object):
         self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2)
 
         self.episodeCounter  = 0 
+        self.stepCounter     = 0
         self.batchCounter    = 0
         self.lossAverages    = []
         self.actionToTake    = 0
@@ -108,12 +109,11 @@ class DQNAgent(object):
         pass
 
     def startEpisode(self, observation):
-        self.stepCounter = 0
         self.batchCounter= 0 
         self.lossAverages= []
 
         if self.training:
-            self.epsilon = max(self.epsilonEnd, self.stepCounter * self.epsilonRate)
+            self.epsilon = max(self.epsilonEnd, self.epsilonStart - self.stepCounter * self.epsilonRate)
         else:
             self.epsilon = self.evalEpsilon
         actionIndex      = np.random.randint(0, self.numActions - 1)
@@ -162,35 +162,6 @@ class DQNAgent(object):
             loss = self.runTrainingBatch()
             self.batchCounter += 1
             self.lossAverages.append(loss)
-
-
-        # if self.training:
-        #     self.trainingMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, False)
-        #     self.trainingMemory.addFrame(observation)
-
-        #     if self.stepCounter >= self.phiLength:
-        #         if len(self.trainingMemory) >= self.replayStartSize and self.stepCounter % self.updateFrequency == 0:
-        #             loss = runTrainingBatch()
-        #             self.batchCounter += 1
-        #             self.lossAverages.append(loss)
-                
-        #         phi = self.trainingMemory.getPhi()
-        #         actionIndex = self.network.chooseAction(phi, self.epsilon)
-        #     else:
-        #         actionIndex = np.random.randint(0, self.numActions - 1)
-
-
-        # else:
-        #     self.evaluationMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, False)
-        #     self.evaluationMemory.addFrame(observation)
-
-        #     if self.stepCounter >= self.phiLength:
-        #         phi = self.evaluationMemory.getPhi()
-        #         actionIndex = self.network.chooseAction(phi, self.epsilon)
-        #     else:
-        #         actionIndex = np.random.randint(0, self.numActions - 1)
-
-
 
         self.actionToTake = actionIndex
         return self.actionList[self.actionToTake]
