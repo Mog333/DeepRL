@@ -47,7 +47,7 @@ def run_experiment(args):
     #load its parameters, append to its evalresults file, open its largest network file
     #If its none, create a experiment directory. create a results file, save parameters, save network files here. 
 
-    experimentDirectory = parameters.rom + time.strftime("%d-%m-%Y-%H-%M") +"/"
+    experimentDirectory = parameters.rom + "_" + time.strftime("%d-%m-%Y-%H-%M") +"/"
     resultsFileName = experimentDirectory + "results.csv"
     startingEpoch = 1
     if parameters.nnFile is None or parameters.nnFile.endswith(".pkl"):

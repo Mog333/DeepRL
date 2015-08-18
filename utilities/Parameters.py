@@ -99,9 +99,6 @@ def processArguments(args, description):
     parser.add_argument('--display-screen', dest="displayScreen",
                         action='store_true', default=False,
                         help='Show the game screen.')
-    parser.add_argument('--experiment-prefix', dest="experimentPrefix",
-                        default=None,
-                        help='Experiment name prefix ' + '(default is the name of the game)')
     parser.add_argument('--frame-skip', dest="frameSkip",
                         default=defaults.FRAME_SKIP, type=int,
                         help='Every how many frames to process ' + 
@@ -182,9 +179,9 @@ def processArguments(args, description):
 
     parameters = parser.parse_args(args)
 
-    if not parameters.rom.endswith(".bin"):
-        parameters.rom = parameters.rom + ".bin"
-
     parameters.fullRomPath = os.path.join(parameters.baseRomPath, parameters.rom)
+
+    if not parameters.rom.endswith(".bin"):
+        parameters.fullRomPath += ".bin"
 
     return parameters
