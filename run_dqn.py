@@ -171,7 +171,7 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch):
         stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining)
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
-
+        stepsRemaining -= stepsTaken
         print "TRAINING: steps Left: " + str(stepsRemaining) + " steps taken:" + str(stepsTaken) + " fps: "+str(fps) + " episode reward: " +str(epsiodeReward) + " avgLoss: " + str(avgLoss)        
 
 
@@ -185,9 +185,10 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest):
         stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining)
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
+        stepsRemaining -= stepsTaken
+        totalReward += epsiodeReward        
         print "EVALUATING: steps Left: " + str(stepsRemaining) + " steps taken:" + str(stepsTaken) + " fps: "+str(fps) + " episode reward: " +str(epsiodeReward) + " avgLoss: " + str(avgLoss)        
         
-        totalReward += epsiodeReward
 
     averageEpisodeReward = float(totalReward) / numEpisodes
     return averageEpisodeReward
