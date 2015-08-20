@@ -103,7 +103,7 @@ def run_experiment(args):
 
             startingEpoch = highestNetworkEpochNumber + 1
             #dont use full exploration, its not a good way to fill the replay memory when we already have a decent policy
-            if startingEpoch > 1:
+            if startingEpoch > 10:
                 parameters.epsilonStart = parameters.epsilonEnd
 
             parameters.nnFile = experimentDirectory + highestNNFile
@@ -119,6 +119,7 @@ def run_experiment(args):
 
     difficulties = ale.getAvailableDifficulties()
     modes = ale.getAvailableModes()
+    modes = [0]
     transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
 
     print "Num difficulties: " + str(len(difficulties)) + " num modes: " + str(len(modes)) + " numtasks: " + str(transferTaskModule.getNumTasks())
@@ -198,7 +199,7 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule):
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
-        print "TRAINING: Task"+ str(lowestSamplesTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
+        print "TRAINING: Task: "+ str(lowestSamplesTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
 
 
 def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
@@ -215,9 +216,6 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
 
         while stepsRemaining > 0:
             numEpisodes += 1
-
-            #TODO Select task by iterating over all of them
-            currentEpisodeTask = 0
 
             startTime = time.time()
             stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, currentEpisodeTask)

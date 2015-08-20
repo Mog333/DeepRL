@@ -60,15 +60,12 @@ class DQNAgentMemory(object):
         self.actionMemory[memoryIndex]     = action
         self.rewardMemory[memoryIndex]     = reward
         self.terminalMemory[memoryIndex]   = terminal
-        self.taskMemory[memoryIndex]       = taskIndex
 
         if self.taskMemory[memoryIndex] != -1:
             #Overwritting another memory
             self.taskSampleCount[self.taskMemory[memoryIndex]] -= 1
-
         self.taskSampleCount[taskIndex] += 1
-
-
+        self.taskMemory[memoryIndex]       = taskIndex
 
         self.currentMemoryIndex = (self.currentMemoryIndex  + 1) % self.memorySize
         self.numberOfExperiences += 1

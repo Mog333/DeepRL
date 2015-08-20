@@ -25,6 +25,6 @@ class TransferTaskModule():
         diffIndex = taskIndex // len(self.taskDifficulties)
 
         diff = self.taskDifficulties[diffIndex]
-        mod = self.taskModes[modeIndex]
+        mode = self.taskModes[modeIndex]
 
         return (diff,mode)
