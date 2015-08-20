@@ -15,6 +15,7 @@ import theano
 import theano.tensor as T
 import cPickle
 import imp
+import TransferLayer
 
 def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
     networkInput = lasagne.layers.InputLayer(shape=(batchSize, numChannels, inputHeight, inputWidth))
@@ -106,6 +107,104 @@ def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutput
         b=lasagne.init.Constant(.1))
 
     return outputLayer
+
+
+
+
+def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, useSharedLayer, numTasks, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
+    networkInput = lasagne.layers.InputLayer(shape=(batchSize, numChannels, inputHeight, inputWidth))
+
+
+    if convImplementation == "conv" or convImplementation == "dnn":
+        if convImplementation == "conv":
+            convFunction = lasagne.layers.conv.Conv2DLayer
+        elif convImplementation == "dnn":
+            from lasagne.layers import dnn
+            convFunction = dnn.Conv2DDNNLayer
+
+        conv1 = convFunction(
+            networkInput, 
+            num_filters = 32, 
+            filter_size = (8,8), 
+            stride=(4,4), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(),
+            b = lasagne.init.Constant(.1))
+
+        conv2 = convFunction(
+            conv1, 
+            num_filters = 64, 
+            filter_size = (4,4), 
+            stride=(2,2), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(),
+            b = lasagne.init.Constant(.1))
+
+        conv3 = convFunction(
+            conv2, 
+            num_filters = 64, 
+            filter_size = (3,3), 
+            stride=(1,1), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(),
+            b = lasagne.init.Constant(.1))
+
+    elif convImplementation == "cuda":
+        from lasagne.layers import cuda_convnet
+        convFunction = cuda_convnet.Conv2DCCLayer
+        dimshuffle = True
+        c01b=True
+
+        conv1 = convFunction(
+            networkInput, 
+            num_filters = 32, 
+            filter_size = (8,8), 
+            stride=(4,4), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(c01b),
+            b = lasagne.init.Constant(.1),
+            dimshuffle=dimshuffle)
+
+        conv2 = convFunction(
+            conv1, 
+            num_filters = 64, 
+            filter_size = (4,4), 
+            stride=(2,2), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(c01b),
+            b = lasagne.init.Constant(.1),
+            dimshuffle=dimshuffle)
+
+        conv3 = convFunction(
+            conv2, 
+            num_filters = 64, 
+            filter_size = (3,3), 
+            stride=(1,1), 
+            nonlinearity=layerNonlinearity, 
+            W = lasagne.init.HeUniform(c01b),
+            b = lasagne.init.Constant(.1),
+            dimshuffle=dimshuffle)
+
+
+    hiddenTransferLayer = TransferLayer.TransferLayer(
+        conv3,
+        num_tasks = numTasks,
+        num_units=512,
+        use_shared_layer = useSharedLayer,
+        W = lasagne.init.HeUniform(),
+        b = lasagne.init.Constant(.1), 
+        nonlinearity=layerNonlinearity)
+
+    outputLayer = lasagne.layers.DenseLayer(
+        hiddenTransferLayer,
+        num_units=numOutputs,
+        nonlinearity=None,
+        W=lasagne.init.HeUniform(),
+        b=lasagne.init.Constant(.1))
+
+    return outputLayer, hiddenTransferLayer
+
+
 
 
 def flipFilters(outputLayer):

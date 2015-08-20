@@ -15,7 +15,7 @@ floatX = theano.config.floatX
 
 class DQNAgentMemory(object):
 
-    def __init__(self, stateShape, phiLength=4, memorySize=10000):
+    def __init__(self, stateShape, phiLength=4, memorySize=10000, numTasks = 1):
         """ 
         Arguments:
             stateShape - tuple containing the dimensions of the experiences being stored
@@ -30,11 +30,14 @@ class DQNAgentMemory(object):
         self.memorySize             = memorySize
         self.stateShape             = stateShape
         self.phiLength              = phiLength
+        self.numTasks               = numTasks
+        self.taskSampleCount        = np.zeros(self.numTasks, dtype='int32')
 
         self.stateMemory            = np.zeros((self.memorySize,) + self.stateShape , dtype = 'uint8')
         self.rewardMemory           = np.zeros(self.memorySize, dtype = floatX)
         self.actionMemory           = np.zeros(self.memorySize, dtype='int32')
         self.terminalMemory         = np.zeros(self.memorySize, dtype='int32')
+        self.taskMemory             = -1 * np.ones(self.memorySize, dtype='int32')
 
 
 
@@ -57,6 +60,15 @@ class DQNAgentMemory(object):
         self.actionMemory[memoryIndex]     = action
         self.rewardMemory[memoryIndex]     = reward
         self.terminalMemory[memoryIndex]   = terminal
+        self.taskMemory[memoryIndex]       = taskIndex
+
+        if self.taskMemory[memoryIndex] != -1:
+            #Overwritting another memory
+            self.taskSampleCount[self.taskMemory[memoryIndex]] -= 1
+
+        self.taskSampleCount[taskIndex] += 1
+
+
 
         self.currentMemoryIndex = (self.currentMemoryIndex  + 1) % self.memorySize
         self.numberOfExperiences += 1
@@ -88,6 +100,7 @@ class DQNAgentMemory(object):
         batchRewards    = np.empty((batchSize, 1),       dtype=floatX)
         batchActions    = np.empty((batchSize, 1),       dtype='int32')
         batchTerminals  = np.empty((batchSize, 1),       dtype='int32')
+        batchTasks      = np.empty(batchSize,            dtype='int32')
 
         count = 0
         maxIndex = min(self.numberOfExperiences, self.memorySize)
@@ -107,10 +120,15 @@ class DQNAgentMemory(object):
           batchRewards[count]    = self.rewardMemory[index]
           batchActions[count]    = self.actionMemory[index]
           batchTerminals[count]  = not self.terminalMemory[index + 1]
+          batchTasks[count]      = self.taskMemory[index]
 
           count += 1
 
-        return batchStates, batchActions, batchRewards, batchNextStates, batchTerminals
+        return batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks
+
+
+    def getLowestSampledTask(self):
+        return np.argmin(self.taskSampleCount)
 
     def __len__(self):
         """ Return the total number of avaible data items. """

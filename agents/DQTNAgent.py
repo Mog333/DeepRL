@@ -37,17 +37,18 @@ sys.path.append("../network")
 import Parameters
 import Environment
 import DeepNetworks
-import DeepQNetwork
+import DeepQTransferNetwork
 import DQNAgentMemory
 
 
 floatX = theano.config.floatX
 
 
-class DQNAgent(object):
+class DQTNAgent(object):
     def __init__(self, actionList, inputHeight, inputWidth, batchSize, phiLength, 
         nnFile, loadWeightsFlipped, updateFrequency, replayMemorySize, replayStartSize,
         networkType, updateRule, batchAccumulator, networkUpdateDelay,
+        useSharedTransferLayer, numTransferTasks,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
         epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon):        
         self.actionList         = actionList
@@ -56,7 +57,7 @@ class DQNAgent(object):
         self.inputWidth         = inputWidth
         self.batchSize          = batchSize
         self.phiLength          = phiLength
-        self.nnFile            = nnFile
+        self.nnFile             = nnFile
         self.loadWeightsFlipped = loadWeightsFlipped
         self.updateFrequency    = updateFrequency
         self.replayMemorySize   = replayMemorySize
@@ -74,15 +75,18 @@ class DQNAgent(object):
         self.epsilonEnd         = epsilonEnd
         self.epsilonDecaySteps  = epsilonDecaySteps
         self.evalEpsilon        = evalEpsilon
+        self.numTransferTasks   = numTransferTasks
+        self.useSharedTransferLayer = useSharedTransferLayer
 
-        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize)
-        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2)
+        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, numTasks=self.numTransferTasks)
+        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    numTasks=self.numTransferTasks)
 
-        self.episodeCounter  = 0 
-        self.stepCounter     = 0
-        self.batchCounter    = 0
-        self.lossAverages    = []
-        self.actionToTake    = 0
+        self.episodeCounter    = 0 
+        self.stepCounter       = 0
+        self.batchCounter      = 0
+        self.lossAverages      = []
+        self.actionToTake      = 0
+        self.transferTaskIndex = 0
 
         self.epsilon = self.epsilonStart
         if self.epsilonDecaySteps != 0:
@@ -92,8 +96,9 @@ class DQNAgent(object):
 
         self.training = False
 
-        self.network = DeepQNetwork.DeepQNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
+        self.network = DeepQTransferNetwork.DeepQTransferNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
             self.discountRate, self.learningRate, self.rmsRho, self.rmsEpsilon, self.momentum, self.networkUpdateDelay,
+            self.useSharedTransferLayer, self.numTransferTasks,
             self.networkType, self.updateRule, self.batchAccumulator)
 
         if self.nnFile is not None:
@@ -103,14 +108,13 @@ class DQNAgent(object):
 
 
 
-
-
     def agentCleanup(self):
         pass
 
-    def startEpisode(self, observation):
+    def startEpisode(self, observation, transferTaskIndex):
         self.batchCounter= 0 
         self.lossAverages= []
+        self.currentTransferTaskIndex = transferTaskIndex
 
         if self.training:
             self.epsilon = max(self.epsilonEnd, self.epsilonStart - self.stepCounter * self.epsilonRate)
@@ -131,7 +135,7 @@ class DQNAgent(object):
         self.stepCounter    += 1
 
         if self.training:
-            self.trainingMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, True)
+            self.trainingMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, True, self.currentTransferTaskIndex)
 
         avgLoss = np.mean(self.lossAverages)
         return avgLoss
@@ -149,12 +153,12 @@ class DQNAgent(object):
         else:
             currentMemory = self.evaluationMemory
 
-        currentMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, False)
+        currentMemory.addExperience(np.clip(reward, -1, 1), self.actionToTake, False, self.currentTransferTaskIndex)
         currentMemory.addFrame(observation)
 
         if self.stepCounter >= self.phiLength:
             phi = currentMemory.getPhi()
-            actionIndex = self.network.chooseAction(phi, self.epsilon)
+            actionIndex = self.network.chooseAction(phi, self.currentTransferTaskIndex, self.epsilon)
         else:
             actionIndex = np.random.randint(0, self.numActions - 1)
 
@@ -168,7 +172,7 @@ class DQNAgent(object):
 
     def runTrainingBatch(self):
         batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
-        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchTerminals)
+        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks)
 
 
     def startTrainingEpoch(self, epochNumber):
@@ -185,11 +189,13 @@ class DQNAgent(object):
         pass
 
     def computeHoldoutQValues(self, holdoutSize):
-        holdoutStates = self.trainingMemory.getRandomExperienceBatch(holdoutSize)[0]
-        holdoutSum = 0
+        holdoutBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize)
+        holdoutStates    = holdoutBatchData[0]
+        holdoutTasks     = holdoutBatchData[5]
+        holdoutSum       = 0
 
         for i in xrange(holdoutSize):
-            holdoutSum += np.mean(self.network.computeQValues(holdoutStates[i, ...]))
+            holdoutSum += np.mean(self.network.computeQValues(holdoutStates[i, ...], holdoutTasks[i]))
 
         return holdoutSum / holdoutSize
 
