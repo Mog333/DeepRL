@@ -185,24 +185,30 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
             b = lasagne.init.Constant(.1),
             dimshuffle=dimshuffle)
 
-
-    hiddenTransferLayer = TransferLayer.TransferLayer(
+    hiddenLayer = lasagne.layers.DenseLayer(
         conv3,
-        num_tasks = numTasks,
         num_units=512,
+        nonlinearity=layerNonlinearity,
+        W = lasagne.init.HeUniform(),
+        b = lasagne.init.Constant(.1))
+
+    transferOutputLayer = TransferLayer.TransferLayer(
+        hiddenLayer,
+        num_tasks = numTasks,
+        num_units = numOutputs,
         use_shared_layer = useSharedLayer,
         W = lasagne.init.HeUniform(),
         b = lasagne.init.Constant(.1), 
-        nonlinearity=layerNonlinearity)
+        nonlinearity=None)
 
-    outputLayer = lasagne.layers.DenseLayer(
-        hiddenTransferLayer,
-        num_units=numOutputs,
-        nonlinearity=None,
-        W=lasagne.init.HeUniform(),
-        b=lasagne.init.Constant(.1))
+    # outputLayer = lasagne.layers.DenseLayer(
+    #     hiddenTransferLayer,
+    #     num_units=numOutputs,
+    #     nonlinearity=None,
+    #     W=lasagne.init.HeUniform(),
+    #     b=lasagne.init.Constant(.1))
 
-    return outputLayer, hiddenTransferLayer
+    return transferOutputLayer, transferOutputLayer
 
 
 
