@@ -41,6 +41,22 @@ import DQNAgentMemory
 import DQTNAgent
 import TransferTaskModule
 
+def createFlavorList(flavorString, maxNumFlavors):
+    #Creates a list of number out of string for selecting modes/difficulties from a string parameter
+    flavorList = []
+    for s in flavorString.split(','):
+        numRange = s.split('_')
+        if len(numRange) == 1:
+            flavorList.append(int(s))
+        else:
+            start = int(numRange[0])
+            end = int(numRange[-1])
+            if end == -1:
+                end = maxNumFlavors - 1
+            for num in range(start, end + 1):
+                flavorList.append(num)
+    return list(set(flavorList))
+
 def run_experiment(args):
     parameters = Parameters.processArguments(args, __doc__)
 
@@ -119,14 +135,17 @@ def run_experiment(args):
 
     difficulties = ale.getAvailableDifficulties()
     modes = ale.getAvailableModes()
-    modes = [0]
+
+    difficulties = createFlavorList(parameters.difficultyString, len(difficulties))
+    modes = createFlavorList(parameters.modeString, len(modes))
+
     transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
 
     print "Num difficulties: " + str(len(difficulties)) + " num modes: " + str(len(modes)) + " numtasks: " + str(transferTaskModule.getNumTasks())
+    print "Modes: " + str(modes)
+    print "Difficulties: " + str(difficulties)
 
-    useSharedTransferLayer = True
     numTransferTasks = transferTaskModule.getNumTasks()
-
 
     agent = DQTNAgent.DQTNAgent(minimalActions, parameters.croppedHeight, parameters.croppedWidth, 
                 parameters.batchSize, 
@@ -140,7 +159,7 @@ def run_experiment(args):
                 parameters.updateRule, 
                 parameters.batchAccumulator, 
                 parameters.networkUpdateDelay,
-                useSharedTransferLayer,
+                parameters.useSharedLayer,
                 numTransferTasks,
                 parameters.discountRate, 
                 parameters.learningRate, 

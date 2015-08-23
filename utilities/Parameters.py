@@ -18,6 +18,7 @@ class Parameters:
     STEPS_PER_EPOCH = 250000
     EPOCHS = 200
     STEPS_PER_TEST = 125000
+    ALL_FLAVOR_STRING = "0_-1"
 
 
     # ----------------------
@@ -176,6 +177,20 @@ def processArguments(args, description):
 
     parser.add_argument('--loadWeightsFlipped', dest="loadWeightsFlipped", type=int, default=defaults.LOAD_WEIGHTS_FLIPPED,
                         help='Load network conv weights fipped.')
+
+
+    parser.add_argument('--mode', dest="modeString", type=str, default=defaults.ALL_FLAVOR_STRING,
+                        help='String representation of which game modes to use. Either of form x_y, or w,x,y,...,z.' +
+                        '-1 indicates end of mode list')
+
+    parser.add_argument('--difficulty', dest="difficultyString", type=str, default=defaults.ALL_FLAVOR_STRING,
+                        help='String representation of which game difficulties to use. Either of form x_y, or w,x,y,...,z'+
+                        '-1 indicates end of mode list')
+
+
+    parser.add_argument('--useSharedLayer', dest="useSharedLayer", default=False, action="store_true", help='Have a shared component in the transfer layer')
+
+
 
     parameters = parser.parse_args(args)
 
