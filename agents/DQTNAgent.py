@@ -189,14 +189,20 @@ class DQTNAgent(object):
         pass
 
     def computeHoldoutQValues(self, holdoutSize):
-        holdoutBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize)
-        holdoutStates    = holdoutBatchData[0]
-        holdoutTasks     = holdoutBatchData[5]
-        holdoutSum       = 0
 
-        for i in xrange(holdoutSize):
-            holdoutSum += np.mean(self.network.computeQValues(holdoutStates[i, ...], holdoutTasks[i]))
+        taskHoldoutAverageQValues = []
 
-        return holdoutSum / holdoutSize
+        for taskIndex in xrange(self.numTasks):
+            holdoutTaskBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize, taskIndex)
+            holdoutStates    = holdoutTaskBatchData[0]
+            holdoutSum       = 0
+
+            for i in xrange(holdoutSize):
+                holdoutSum += np.mean(self.network.computeQValues(holdoutStates[i, ...], taskIndex))
+
+            taskHoldoutAverageQValues.append(holdoutSum / holdoutSize)
+
+
+        return taskHoldoutAverageQValues
 
 

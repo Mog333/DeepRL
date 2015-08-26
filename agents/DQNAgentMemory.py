@@ -87,7 +87,7 @@ class DQNAgentMemory(object):
         phi = np.array([self.stateMemory[i] for i in phiIndices])
         return phi
 
-    def getRandomExperienceBatch(self, batchSize):
+    def getRandomExperienceBatch(self, batchSize, taskIndex = None):
         assert batchSize < self.numberOfExperiences - self.phiLength + 1
 
         experienceStateShape = (batchSize, self.phiLength) + self.stateShape
@@ -110,6 +110,9 @@ class DQNAgentMemory(object):
           phiIndices = self.getPhiIndices(index)
 
           if True in [self.terminalMemory[i] for i in phiIndices]:
+            continue
+
+          if taskIndex != None and self.taskMemory[i] != taskIndex:
             continue
 
           batchStates[count]     = self.getPhi(index)

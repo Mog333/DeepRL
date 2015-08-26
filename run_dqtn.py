@@ -193,8 +193,8 @@ def run_experiment(args):
             for avgReward in avgRewardPerTask:
                 resultsString += str(round(avgReward, 4)) + ",\t"
 
-            resultsFile.write( resultsString)
-            resultsFile.write("\t" + str(round(holdoutQVals, 4)) + "\n")
+            resultsFile.write(resultsString)
+            resultsFile.write("\t" + str([round(x, 4) for x in holdoutQVals]) + "\n")
             resultsFile.close()
 
             agent.endEvaluationEpoch(epoch)

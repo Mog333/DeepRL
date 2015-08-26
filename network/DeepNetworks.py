@@ -213,7 +213,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
 
 
-def flipFilters(outputLayer):
+def flipCNNFilters(outputLayer):
         inputLayer = outputLayer
 
         try:
@@ -317,4 +317,4 @@ def loadNetworkParams(network, paramFile, flipFilters = False):
     paramHandle.close()
 
     if flipFilters:
-        flipFilters(network)
+        flipCNNFilters(network)
