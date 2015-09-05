@@ -318,3 +318,4 @@ def loadNetworkParams(network, paramFile, flipFilters = False):
 
     if flipFilters:
         flipCNNFilters(network)
+

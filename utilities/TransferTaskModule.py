@@ -22,7 +22,7 @@ class TransferTaskModule():
 
     def getTaskTuple(self, taskIndex): 
         modeIndex = taskIndex % len(self.taskModes)
-        diffIndex = taskIndex // len(self.taskDifficulties)
+        diffIndex = taskIndex // len(self.taskModes)
 
         diff = self.taskDifficulties[diffIndex]
         mode = self.taskModes[modeIndex]

@@ -92,9 +92,14 @@ class TransferLayer(lasagne.layers.Layer):
         if self.W_Shared is not None:
             activation = T.batched_dot(input,self.W[self.taskIndices] + [self.W_Shared] * self.batchSize)
         else:
-            activation = T.batched_dot(input,self.W[self.taskIndices])
-
-        if self.b is not None:
+            #activation = T.batched_dot(input,self.W[self.taskIndices])
+	    if self.num_tasks == 1:
+                 #Using transferlayer as normal dense layer
+                 activation = T.dot(input,self.W[0])
+            else:
+                 activation = T.batched_dot(input,self.W[self.taskIndices]
+        
+	if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
 
@@ -104,3 +109,4 @@ class TransferLayer(lasagne.layers.Layer):
 
     def getTaskIndices(self):
         return self.taskIndices.get_value()
+
