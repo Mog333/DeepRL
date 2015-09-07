@@ -20,6 +20,7 @@ class Parameters:
     STEPS_PER_TEST = 125000
     ALL_FLAVOR_STRING = "0_-1"
 
+    TRANSFER_EXPERIMENT_TYPE = "layerShare"
 
     # ----------------------
     # ALE Parameters
@@ -32,6 +33,7 @@ class Parameters:
     IMAGE_WIDTH = 160
     IMAGE_HEIGHT = 210
     REPEAT_ACTION_PROBABILITY = 0.00
+
 
 
     # ----------------------
@@ -187,9 +189,10 @@ def processArguments(args, description):
                         help='String representation of which game difficulties to use. Either of form x_y, or w,x,y,...,z'+
                         '-1 indicates end of mode list')
 
-
-    parser.add_argument('--useSharedLayer', dest="useSharedLayer", default=False, action="store_true", help='Have a shared component in the transfer layer')
-
+    parser.add_argument('--transferExperimentType', dest="transferExperimentType", type=str, default=defaults.TRANSFER_EXPERIMENT_TYPE, help='String specifying the type of transfer experiment (networkShare|layerShare|representationShare)')
+    #parser.add_argument('--useSharedLayer', dest="useSharedLayer", default=False, action="store_true", help='Have a shared component in the transfer layer')
+    parser.add_argument('--reduceEpochLengthByNumFlavors', dest="reduceEpochLengthByNumFlavors", default=False, action="store_true", help='Flag to reduce the length of an epoch by the number of flavors')
+    parser.add_argument('--evaluationFrequency', dest="evaluationFrequency", type=int, default=1, help=('Evaluation Frequency'))
 
 
     parameters = parser.parse_args(args)

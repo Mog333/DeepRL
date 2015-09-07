@@ -15,7 +15,7 @@ import imp
 class DeepQTransferNetwork(object):
     def __init__(self, batchSize, numFrames, inputHeight, inputWidth, numActions, 
         discountRate, learningRate, rho, rms_epsilon, momentum, networkUpdateDelay,
-        useSharedTransferLayer = False, numTransferTasks = 0, 
+        transferExperimentType = "fullShare", numTransferTasks = 0, 
         networkType = "conv", updateRule = "deepmind_rmsprop", batchAccumulator = "sum", clipDelta = 1.0, inputScale = 255.0):
         
         self.batchSize          = batchSize
@@ -36,7 +36,8 @@ class DeepQTransferNetwork(object):
         self.clipDelta          = clipDelta
         self.updateCounter      = 0
         self.numTransferTasks   = numTransferTasks
-        self.useSharedTransferLayer = useSharedTransferLayer
+        self.transferExperimentType = transferExperimentType
+        # self.useSharedTransferLayer = useSharedTransferLayer
         self.hiddenTransferLayer = None
 
         states     = T.tensor4("states")
@@ -52,13 +53,13 @@ class DeepQTransferNetwork(object):
         self.terminalsShared   = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
 
         self.qValueNetwork, self.hiddenTransferLayer  = DeepNetworks.buildDeepQTransferNetwork(
-            self.batchSize, self.numFrames, self.inputHeight, self.inputWidth, self.numActions, self.useSharedTransferLayer, self.numTransferTasks, convImplementation=self.networkType)
+            self.batchSize, self.numFrames, self.inputHeight, self.inputWidth, self.numActions, self.transferExperimentType , self.numTransferTasks, convImplementation=self.networkType)
 
         qValues = lasagne.layers.get_output(self.qValueNetwork, states / self.inputScale)
 
         if self.networkUpdateDelay > 0:
             self.nextQValueNetwork, _ = DeepNetworks.buildDeepQTransferNetwork(
-                self.batchSize, self.numFrames, self.inputHeight, self.inputWidth, self.numActions, self.useSharedTransferLayer, self.numTransferTasks, convImplementation = self.networkType)
+                self.batchSize, self.numFrames, self.inputHeight, self.inputWidth, self.numActions, self.transferExperimentType, self.numTransferTasks, convImplementation = self.networkType)
             self.resetNextQValueNetwork()
             nextQValues = lasagne.layers.get_output(self.nextQValueNetwork, nextStates / self.inputScale)
 
@@ -113,7 +114,9 @@ class DeepQTransferNetwork(object):
         self.actionsShared.set_value(actionBatch)
         self.rewardsShared.set_value(rewardBatch)
         self.terminalsShared.set_value(terminalBatch)
-        self.hiddenTransferLayer.setTaskIndices(tasksBatch)
+
+        if self.hiddenTransferLayer is not None:
+            self.hiddenTransferLayer.setTaskIndices(tasksBatch)
 
         if self.networkUpdateDelay > 0 and self.updateCounter % self.networkUpdateDelay == 0:
             self.resetNextQValueNetwork()
@@ -126,8 +129,12 @@ class DeepQTransferNetwork(object):
         stateBatch = np.zeros((self.batchSize, self.numFrames, self.inputHeight, self.inputWidth), dtype=theano.config.floatX)
         stateBatch[0, ...] = state
         self.statesShared.set_value(stateBatch)
-        currentTaskIndices = self.hiddenTransferLayer.getTaskIndices()
-        currentTaskIndices[0, ...] = currentTask
+
+        if self.hiddenTransferLayer is not None:
+            currentTaskIndices = self.hiddenTransferLayer.getTaskIndices()
+            currentTaskIndices[0, ...] = currentTask
+            self.hiddenTransferLayer.setTaskIndices(currentTaskIndices)
+            
         return self.__computeQValues()[0]
 
 

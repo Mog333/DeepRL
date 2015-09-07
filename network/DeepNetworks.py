@@ -111,7 +111,7 @@ def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutput
 
 
 
-def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, useSharedLayer, numTasks, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
+def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, transferExperimentType, numTasks, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
     networkInput = lasagne.layers.InputLayer(shape=(batchSize, numChannels, inputHeight, inputWidth))
 
 
@@ -185,6 +185,8 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
             b = lasagne.init.Constant(.1),
             dimshuffle=dimshuffle)
 
+
+
     hiddenLayer = lasagne.layers.DenseLayer(
         conv3,
         num_units=512,
@@ -192,23 +194,44 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
         W = lasagne.init.HeUniform(),
         b = lasagne.init.Constant(.1))
 
-    transferOutputLayer = TransferLayer.TransferLayer(
-        hiddenLayer,
-        num_tasks = numTasks,
-        num_units = numOutputs,
-        use_shared_layer = useSharedLayer,
-        W = lasagne.init.HeUniform(),
-        b = lasagne.init.Constant(.1), 
-        nonlinearity=None)
+    transferOutputLayer = None
+    if transferExperimentType == "fullShare":
+        outputLayer = lasagne.layers.DenseLayer(
+            hiddenTransferLayer,
+            num_units=numOutputs,
+            nonlinearity=None,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1))
+    elif transferExperimentType == "layerShare":
+        outputLayer = TransferLayer.TransferLayer(
+            hiddenLayer,
+            num_tasks = numTasks,
+            num_units = numOutputs,
+            use_shared_layer = True,
+            W = lasagne.init.HeUniform(),
+            b = lasagne.init.Constant(.1), 
+            nonlinearity=None)
+        transferOutputLayer = outputLayer
+    elif if transferExperimentType == "representationShare":
+        outputLayer = TransferLayer.TransferLayer(
+            hiddenLayer,
+            num_tasks = numTasks,
+            num_units = numOutputs,
+            use_shared_layer = False,
+            W = lasagne.init.HeUniform(),
+            b = lasagne.init.Constant(.1), 
+            nonlinearity=None)
+        transferOutputLayer = outputLayer
+    else:
+        print "Unknown transfer experiment type!\nDefaulting to full share network..."
+        outputLayer = lasagne.layers.DenseLayer(
+            hiddenTransferLayer,
+            num_units=numOutputs,
+            nonlinearity=None,
+            W=lasagne.init.HeUniform(),
+            b=lasagne.init.Constant(.1))    
 
-    # outputLayer = lasagne.layers.DenseLayer(
-    #     hiddenTransferLayer,
-    #     num_units=numOutputs,
-    #     nonlinearity=None,
-    #     W=lasagne.init.HeUniform(),
-    #     b=lasagne.init.Constant(.1))
-
-    return transferOutputLayer, transferOutputLayer
+    return outputLayer, transferOutputLayer
 
 
 

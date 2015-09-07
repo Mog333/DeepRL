@@ -119,13 +119,13 @@ def run_experiment(args):
 
             startingEpoch = highestNetworkEpochNumber + 1
             #dont use full exploration, its not a good way to fill the replay memory when we already have a decent policy
-            if startingEpoch > 10:
+            if startingEpoch > 4:
                 parameters.epsilonStart = parameters.epsilonEnd
 
             parameters.nnFile = experimentDirectory + highestNNFile
             print "Loaded experiment: " + experimentDirectory + "\nLoaded network file:" + highestNNFile
 
-
+    
     sys.setrecursionlimit(10000)
     ale = ALEInterface()
 
@@ -147,6 +147,9 @@ def run_experiment(args):
 
     numTransferTasks = transferTaskModule.getNumTasks()
 
+    if (parameters.reduceEpochLengthByNumFlavors):
+        parameters.stepsPerEpoch = int(parameters.stepsPerEpoch / numTransferTasks)
+
     agent = DQTNAgent.DQTNAgent(minimalActions, parameters.croppedHeight, parameters.croppedWidth, 
                 parameters.batchSize, 
                 parameters.phiLength,
@@ -159,7 +162,7 @@ def run_experiment(args):
                 parameters.updateRule, 
                 parameters.batchAccumulator, 
                 parameters.networkUpdateDelay,
-                parameters.useSharedLayer,
+                parameters.transferExperimentType,
                 numTransferTasks,
                 parameters.discountRate, 
                 parameters.learningRate, 
@@ -181,7 +184,7 @@ def run_experiment(args):
         networkFileName = experimentDirectory + "network_" + str(epoch) + ".pkl"
         DeepNetworks.saveNetworkParams(agent.network.qValueNetwork, networkFileName)
 
-        if parameters.stepsPerTest > 0:
+        if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)
             avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule)
             holdoutQVals = agent.computeHoldoutQValues(3200)

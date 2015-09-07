@@ -48,7 +48,7 @@ class DQTNAgent(object):
     def __init__(self, actionList, inputHeight, inputWidth, batchSize, phiLength, 
         nnFile, loadWeightsFlipped, updateFrequency, replayMemorySize, replayStartSize,
         networkType, updateRule, batchAccumulator, networkUpdateDelay,
-        useSharedTransferLayer, numTransferTasks,
+        transferExperimentType, numTransferTasks,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
         epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon):        
         self.actionList         = actionList
@@ -76,7 +76,8 @@ class DQTNAgent(object):
         self.epsilonDecaySteps  = epsilonDecaySteps
         self.evalEpsilon        = evalEpsilon
         self.numTransferTasks   = numTransferTasks
-        self.useSharedTransferLayer = useSharedTransferLayer
+        self.transferExperimentType = transferExperimentType
+        # self.useSharedTransferLayer = useSharedTransferLayer
 
         self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, numTasks=self.numTransferTasks)
         self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    numTasks=self.numTransferTasks)
@@ -98,7 +99,7 @@ class DQTNAgent(object):
 
         self.network = DeepQTransferNetwork.DeepQTransferNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
             self.discountRate, self.learningRate, self.rmsRho, self.rmsEpsilon, self.momentum, self.networkUpdateDelay,
-            self.useSharedTransferLayer, self.numTransferTasks,
+            self.transferExperimentType , self.numTransferTasks,
             self.networkType, self.updateRule, self.batchAccumulator)
 
         if self.nnFile is not None:
@@ -189,7 +190,6 @@ class DQTNAgent(object):
         pass
 
     def computeHoldoutQValues(self, holdoutSize):
-
         taskHoldoutAverageQValues = []
 
         for taskIndex in xrange(self.numTasks):

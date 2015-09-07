@@ -94,12 +94,12 @@ class TransferLayer(lasagne.layers.Layer):
         else:
             #activation = T.batched_dot(input,self.W[self.taskIndices])
 	    if self.num_tasks == 1:
-                 #Using transferlayer as normal dense layer
-                 activation = T.dot(input,self.W[0])
+                #Using transferlayer as normal dense layer
+                activation = T.dot(input,self.W[0])
             else:
-                 activation = T.batched_dot(input,self.W[self.taskIndices]
+                activation = T.batched_dot(input,self.W[self.taskIndices])
         
-	if self.b is not None:
+	    if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
 
