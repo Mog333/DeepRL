@@ -136,6 +136,8 @@ def run_experiment(args):
     difficulties = ale.getAvailableDifficulties()
     modes = ale.getAvailableModes()
 
+    maxNumFlavors = len(difficulties) * len(modes)
+
     difficulties = createFlavorList(parameters.difficultyString, len(difficulties))
     modes = createFlavorList(parameters.modeString, len(modes))
 
@@ -148,7 +150,7 @@ def run_experiment(args):
     numTransferTasks = transferTaskModule.getNumTasks()
 
     if (parameters.reduceEpochLengthByNumFlavors):
-        parameters.stepsPerEpoch = int(parameters.stepsPerEpoch / numTransferTasks)
+        parameters.stepsPerEpoch = int(parameters.stepsPerEpoch / maxNumFlavors)
 
     agent = DQTNAgent.DQTNAgent(minimalActions, parameters.croppedHeight, parameters.croppedWidth, 
                 parameters.batchSize, 

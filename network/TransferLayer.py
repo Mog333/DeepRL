@@ -99,7 +99,7 @@ class TransferLayer(lasagne.layers.Layer):
             else:
                 activation = T.batched_dot(input,self.W[self.taskIndices])
         
-	    if self.b is not None:
+        if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)
 
