@@ -149,7 +149,7 @@ def run_experiment(args):
         networkFileName = experimentDirectory + "network_" + str(epoch) + ".pkl"
         DeepNetworks.saveNetworkParams(agent.network.qValueNetwork, networkFileName)
 
-        if parameters.stepsPerTest > 0:
+        if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)
             avgReward = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest)
             holdoutQVals = agent.computeHoldoutQValues(3200)

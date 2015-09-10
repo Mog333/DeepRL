@@ -192,7 +192,7 @@ class DQTNAgent(object):
     def computeHoldoutQValues(self, holdoutSize):
         taskHoldoutAverageQValues = []
 
-        for taskIndex in xrange(self.numTasks):
+        for taskIndex in xrange(self.numTransferTasks):
             holdoutTaskBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize, taskIndex)
             holdoutStates    = holdoutTaskBatchData[0]
             holdoutSum       = 0
