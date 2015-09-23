@@ -66,7 +66,7 @@ def run_experiment(args):
 
     experimentDirectory = parameters.rom + "_" + time.strftime("%d-%m-%Y-%H-%M") +"/"
     resultsFileName = experimentDirectory + "results.csv"
-    startingEpoch = 1
+    startingEpoch = 0
     if parameters.nnFile is None or parameters.nnFile.endswith(".pkl"):
         #Create your experiment directory, results file, save parameters
         if not os.path.isdir(experimentDirectory):
@@ -224,7 +224,7 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule):
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
         print "TRAINING: Task: "+ str(lowestSamplesTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
-
+        sys.stdout.flush()
 
 def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
     print "Starting Evaluation epoch: " + str(epoch)
@@ -248,7 +248,7 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
             stepsRemaining -= stepsTaken
             totalReward += epsiodeReward    
             print "EVALUATING: Task:" + str(currentEpisodeTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)            
-            
+            sys.stdout.flush()
         taskAverageRewards.append(float(totalReward) / numEpisodes)
 
     return taskAverageRewards
