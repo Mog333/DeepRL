@@ -198,6 +198,7 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest):
 
 
 def runEpisode(ale, agent, stepsRemaining):
+    maxEpisodeDuration = 60 * 60 * 5 #Max game duration is 5 minutes, at 60 fps
     framesElapsed       = 0
     totalEpisodeReward  = 0
     ale_game_over       = False
@@ -207,7 +208,7 @@ def runEpisode(ale, agent, stepsRemaining):
     preprocessedObservation = Preprocessing.preprocessALEObservation(screenObservation, agent.inputHeight, agent.inputWidth)
     action = agent.startEpisode(preprocessedObservation)
 
-    while not ale_game_over and framesElapsed < stepsRemaining:
+    while not ale_game_over and framesElapsed < stepsRemaining and framesElapsed < maxEpisodeDuration:
 
         framesElapsed += 1
         reward = ale.act(action)
