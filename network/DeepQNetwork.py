@@ -66,13 +66,19 @@ class DeepQNetwork(object):
         target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
         targetDifference = target - qValues[T.arange(self.batchSize), actions.reshape((-1,))].reshape((-1, 1))
 
-        if self.clipDelta > 0:
-            targetDifference = targetDifference.clip(-1.0 * self.clipDelta, self.clipDelta)
+
+        quadraticPart = T.minimum(abs(targetDifference), self.clipDelta)
+        linearPart = abs(targetDifference) - quadraticPart
+
+        # if self.clipDelta > 0:
+        #     targetDifference = targetDifference.clip(-1.0 * self.clipDelta, self.clipDelta)
 
         if self.batchAccumulator == "sum":
-            loss = T.sum(targetDifference ** 2)
+            # loss = T.sum(targetDifference ** 2)
+            loss = T.sum(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
         elif self.batchAccumulator == "mean":
-            loss = T.mean(targetDifference ** 2)
+            # loss = T.mean(targetDifference ** 2)
+            loss = T.mean(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
         else:
             raise ValueError("Bad Network Accumulator. {sum, mean} expected")
 
