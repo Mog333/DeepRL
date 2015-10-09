@@ -15,7 +15,7 @@ floatX = theano.config.floatX
 
 class DQNAgentMemory(object):
 
-    def __init__(self, stateShape, phiLength=4, memorySize=10000, kReturnLength = 1, numTasks = 1):
+    def __init__(self, stateShape, phiLength=4, memorySize=10000, discountRate, numTasks = 1):
         """ 
         Arguments:
             stateShape - tuple containing the dimensions of the experiences being stored
@@ -31,7 +31,7 @@ class DQNAgentMemory(object):
         self.stateShape             = stateShape
         self.phiLength              = phiLength
         self.numTasks               = numTasks
-        self.kReturnLength          = kReturnLength
+        self.discountRate           = discountRate
         self.taskSampleCount        = np.zeros(self.numTasks, dtype='int32')
 
         self.stateMemory            = np.zeros((self.memorySize,) + self.stateShape , dtype = 'uint8')
@@ -88,8 +88,9 @@ class DQNAgentMemory(object):
         phi = np.array([self.stateMemory[i] for i in phiIndices])
         return phi
 
-    def getRandomExperienceBatch(self, batchSize, taskIndex = None):
+    def getRandomExperienceBatch(self, batchSize, kReturnLength = 1, taskIndex = None):
         assert batchSize < self.numberOfExperiences - self.phiLength + 1
+        assert kReturnLength > 0
 
         experienceStateShape = (batchSize, self.phiLength) + self.stateShape
 
@@ -106,23 +107,44 @@ class DQNAgentMemory(object):
 
         while count < batchSize:
           index = np.random.randint(0, maxIndex - 1)
-          if (index + 1 >= self.currentMemoryIndex) and (index < (self.currentMemoryIndex + self.phiLength)):
+
+          #Sample is in area we are currently building experience, ie going forward from this index will loop over an episode boundary
+          if (index + kReturnLength >= self.currentMemoryIndex) and (index < (self.currentMemoryIndex + self.phiLength + kReturnLength - 1)):
+            continue
+          #Sample is not of the current task
+          if taskIndex != None and self.taskMemory[index] != taskIndex:
             continue
 
+          #Sample contains a episode boundary when building state (we are less than phiLength after an episode start)
           phiIndices = self.getPhiIndices(index)
-
           if True in [self.terminalMemory[i] for i in phiIndices]:
             continue
 
-          if taskIndex != None and self.taskMemory[i] != taskIndex:
+
+          badSample = False
+          currentReturn = 0.0
+          currentDiscount = 1.0
+          for i in xrange(0, kReturnLength):
+            currentIndex = (index + i) % self.memorySize
+            if self.terminalMemory[ currentIndex ] == True:
+              badSample = True
+              break
+
+            currentReturn += currentDiscount * self.rewardMemory[index + i]
+            currentDiscount *= self.discountRate
+
+          if badSample == True:
             continue
 
+          # if (index + 1 >= self.currentMemoryIndex) and (index < (self.currentMemoryIndex + self.phiLength)):
+            # continue
+
           batchStates[count]     = self.getPhi(index)
-          batchNextStates[count] = self.getPhi(index + 1)
-          batchRewards[count]    = self.rewardMemory[index]
+          batchNextStates[count] = self.getPhi(index + kReturnLength)
+          batchRewards[count]    = currentReturn
           batchActions[count]    = self.actionMemory[index]
-          batchNextActions[count]= self.actionMemory[index + 1]
-          batchTerminals[count]  = not self.terminalMemory[index + 1]
+          batchNextActions[count]= self.actionMemory[index + kReturnLength]
+          batchTerminals[count]  = not self.terminalMemory[index + kReturnLength]
           batchTasks[count]      = self.taskMemory[index]
 
           count += 1

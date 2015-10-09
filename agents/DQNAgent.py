@@ -77,8 +77,8 @@ class DQNAgent(object):
         self.kReturnLength      = kReturnLength
         self.useSARSAUpdate     = useSARSAUpdate
 
-        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, self.kReturnLength)
-        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2, self.kReturnLength)
+        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, self.discountRate)
+        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    self.discountRate)
 
         self.episodeCounter  = 0 
         self.stepCounter     = 0

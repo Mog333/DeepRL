@@ -68,9 +68,9 @@ class DeepQNetwork(object):
 
 
         if self.useSARSAUpdate:
-            target = rewards + terminals * self.discountRate * nextQValues[T.arange(self.batchSize), nextActions.reshape((-1,))].reshape((-1, 1))
+            target = rewards + terminals * (self.discountRate ** self.kReturnLength) * nextQValues[T.arange(self.batchSize), nextActions.reshape((-1,))].reshape((-1, 1))
         else:
-            target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
+            target = rewards + terminals * (self.discountRate ** self.kReturnLength) * T.max(nextQValues, axis = 1, keepdims = True)
 
         targetDifference = target - qValues[T.arange(self.batchSize), actions.reshape((-1,))].reshape((-1, 1))
 
