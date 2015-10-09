@@ -174,7 +174,9 @@ def run_experiment(args):
                 parameters.epsilonStart, 
                 parameters.epsilonEnd, 
                 parameters.epsilonDecaySteps,
-                parameters.evalEpsilon)
+                parameters.evalEpsilon,
+                parameters.useSARSAUpdate,
+                parameters.kReturnLength)
 
 
 

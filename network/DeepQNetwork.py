@@ -14,7 +14,7 @@ import imp
 
 class DeepQNetwork(object):
     def __init__(self, batchSize, numFrames, inputHeight, inputWidth, numActions, 
-        discountRate, learningRate, rho, rms_epsilon, momentum, networkUpdateDelay,
+        discountRate, learningRate, rho, rms_epsilon, momentum, networkUpdateDelay, useSARSAUpdate, kReturnLength,
         networkType = "conv", updateRule = "deepmind_rmsprop", batchAccumulator = "sum", clipDelta = 1.0, inputScale = 255.0):
         
         self.batchSize          = batchSize
@@ -29,6 +29,8 @@ class DeepQNetwork(object):
         self.rms_epsilon        = rms_epsilon
         self.momentum           = momentum
         self.networkUpdateDelay = networkUpdateDelay
+        self.useSARSAUpdate     = useSARSAUpdate
+        self.kReturnLength      = kReturnLength
         self.networkType        = networkType
         self.updateRule         = updateRule
         self.batchAccumulator   = batchAccumulator
@@ -39,12 +41,14 @@ class DeepQNetwork(object):
         nextStates = T.tensor4("nextStates")
         rewards    = T.col("rewards")
         actions    = T.icol("actions")
+        nextActions= T.icol("nextActions")
         terminals  = T.icol("terminals")
 
         self.statesShared      = theano.shared(np.zeros((self.batchSize, self.numFrames, self.inputHeight, self.inputWidth), dtype=theano.config.floatX))
         self.nextStatesShared  = theano.shared(np.zeros((self.batchSize, self.numFrames, self.inputHeight, self.inputWidth), dtype=theano.config.floatX))
         self.rewardsShared     = theano.shared(np.zeros((self.batchSize, 1), dtype=theano.config.floatX), broadcastable=(False, True))
         self.actionsShared     = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
+        self.nextActionsShared = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
         self.terminalsShared   = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
 
         self.qValueNetwork  = DeepNetworks.buildDeepQNetwork(
@@ -63,7 +67,11 @@ class DeepQNetwork(object):
             nextQValues = theano.gradient.disconnected_grad(nextQValues)
 
 
-        target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
+        if self.useSARSAUpdate:
+            target = rewards + terminals * self.discountRate * nextQValues[T.arange(self.batchSize), nextActions.reshape((-1,))].reshape((-1, 1))
+        else:
+            target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
+
         targetDifference = target - qValues[T.arange(self.batchSize), actions.reshape((-1,))].reshape((-1, 1))
 
 
@@ -102,6 +110,7 @@ class DeepQNetwork(object):
             nextStates: self.nextStatesShared,
             rewards:self.rewardsShared,
             actions: self.actionsShared,
+            nextActions: self.nextActionsShared,
             terminals: self.terminalsShared
         }
 
@@ -109,10 +118,11 @@ class DeepQNetwork(object):
         self.__computeQValues = theano.function([], qValues, givens={states: self.statesShared})
 
 
-    def trainNetwork(self, stateBatch, actionBatch, rewardBatch, nextStateBatch, terminalBatch):
+    def trainNetwork(self, stateBatch, actionBatch, rewardBatch, nextStateBatch, nextActionBatch, terminalBatch):
         self.statesShared.set_value(stateBatch)
         self.nextStatesShared.set_value(nextStateBatch)
         self.actionsShared.set_value(actionBatch)
+        self.nextActionsShared.set_value(nextActionBatch)
         self.rewardsShared.set_value(rewardBatch)
         self.terminalsShared.set_value(terminalBatch)
 

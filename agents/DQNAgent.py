@@ -49,7 +49,7 @@ class DQNAgent(object):
         nnFile, loadWeightsFlipped, updateFrequency, replayMemorySize, replayStartSize,
         networkType, updateRule, batchAccumulator, networkUpdateDelay,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
-        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon):        
+        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon, useSARSAUpdate, kReturnLength):        
         self.actionList         = actionList
         self.numActions         = len(self.actionList)
         self.inputHeight        = inputHeight
@@ -74,9 +74,11 @@ class DQNAgent(object):
         self.epsilonEnd         = epsilonEnd
         self.epsilonDecaySteps  = epsilonDecaySteps
         self.evalEpsilon        = evalEpsilon
+        self.kReturnLength      = kReturnLength
+        self.useSARSAUpdate     = useSARSAUpdate
 
-        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize)
-        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2)
+        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, self.kReturnLength)
+        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2, self.kReturnLength)
 
         self.episodeCounter  = 0 
         self.stepCounter     = 0
@@ -94,6 +96,7 @@ class DQNAgent(object):
 
         self.network = DeepQNetwork.DeepQNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
             self.discountRate, self.learningRate, self.rmsRho, self.rmsEpsilon, self.momentum, self.networkUpdateDelay,
+            self.useSARSAUpdate, self.kReturnLength,
             self.networkType, self.updateRule, self.batchAccumulator)
 
         if self.nnFile is not None:
@@ -167,8 +170,8 @@ class DQNAgent(object):
         return self.actionList[self.actionToTake]
 
     def runTrainingBatch(self):
-        batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
-        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchTerminals)
+        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
+        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals)
 
 
     def startTrainingEpoch(self, epochNumber):

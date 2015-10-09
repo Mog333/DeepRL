@@ -15,7 +15,7 @@ floatX = theano.config.floatX
 
 class DQNAgentMemory(object):
 
-    def __init__(self, stateShape, phiLength=4, memorySize=10000, numTasks = 1):
+    def __init__(self, stateShape, phiLength=4, memorySize=10000, kReturnLength = 1, numTasks = 1):
         """ 
         Arguments:
             stateShape - tuple containing the dimensions of the experiences being stored
@@ -31,6 +31,7 @@ class DQNAgentMemory(object):
         self.stateShape             = stateShape
         self.phiLength              = phiLength
         self.numTasks               = numTasks
+        self.kReturnLength          = kReturnLength
         self.taskSampleCount        = np.zeros(self.numTasks, dtype='int32')
 
         self.stateMemory            = np.zeros((self.memorySize,) + self.stateShape , dtype = 'uint8')
@@ -96,6 +97,7 @@ class DQNAgentMemory(object):
         batchNextStates = np.empty(experienceStateShape, dtype=floatX)
         batchRewards    = np.empty((batchSize, 1),       dtype=floatX)
         batchActions    = np.empty((batchSize, 1),       dtype='int32')
+        batchNextActions= np.empty((batchSize, 1),       dtype='int32')
         batchTerminals  = np.empty((batchSize, 1),       dtype='int32')
         batchTasks      = np.empty(batchSize,            dtype='int32')
 
@@ -119,12 +121,13 @@ class DQNAgentMemory(object):
           batchNextStates[count] = self.getPhi(index + 1)
           batchRewards[count]    = self.rewardMemory[index]
           batchActions[count]    = self.actionMemory[index]
+          batchNextActions[count]= self.actionMemory[index + 1]
           batchTerminals[count]  = not self.terminalMemory[index + 1]
           batchTasks[count]      = self.taskMemory[index]
 
           count += 1
 
-        return batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks
+        return batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks
 
 
     def getLowestSampledTask(self):

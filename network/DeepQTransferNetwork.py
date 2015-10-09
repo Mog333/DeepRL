@@ -14,7 +14,7 @@ import imp
 
 class DeepQTransferNetwork(object):
     def __init__(self, batchSize, numFrames, inputHeight, inputWidth, numActions, 
-        discountRate, learningRate, rho, rms_epsilon, momentum, networkUpdateDelay,
+        discountRate, learningRate, rho, rms_epsilon, momentum, networkUpdateDelay, useSARSAUpdate, kReturnLength,
         transferExperimentType = "fullShare", numTransferTasks = 0, 
         networkType = "conv", updateRule = "deepmind_rmsprop", batchAccumulator = "sum", clipDelta = 1.0, inputScale = 255.0):
         
@@ -30,6 +30,8 @@ class DeepQTransferNetwork(object):
         self.rms_epsilon        = rms_epsilon
         self.momentum           = momentum
         self.networkUpdateDelay = networkUpdateDelay
+        self.useSARSAUpdate     = useSARSAUpdate
+        self.kReturnLength      = kReturnLength
         self.networkType        = networkType
         self.updateRule         = updateRule
         self.batchAccumulator   = batchAccumulator
@@ -44,12 +46,14 @@ class DeepQTransferNetwork(object):
         nextStates = T.tensor4("nextStates")
         rewards    = T.col("rewards")
         actions    = T.icol("actions")
+        nextActions= T.icol("nextActions")
         terminals  = T.icol("terminals")
 
         self.statesShared      = theano.shared(np.zeros((self.batchSize, self.numFrames, self.inputHeight, self.inputWidth), dtype=theano.config.floatX))
         self.nextStatesShared  = theano.shared(np.zeros((self.batchSize, self.numFrames, self.inputHeight, self.inputWidth), dtype=theano.config.floatX))
         self.rewardsShared     = theano.shared(np.zeros((self.batchSize, 1), dtype=theano.config.floatX), broadcastable=(False, True))
         self.actionsShared     = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
+        self.nextActionsShared = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
         self.terminalsShared   = theano.shared(np.zeros((self.batchSize, 1), dtype='int32'), broadcastable=(False, True))
 
         self.qValueNetwork, self.hiddenTransferLayer  = DeepNetworks.buildDeepQTransferNetwork(
@@ -62,22 +66,33 @@ class DeepQTransferNetwork(object):
                 self.batchSize, self.numFrames, self.inputHeight, self.inputWidth, self.numActions, self.transferExperimentType, self.numTransferTasks, convImplementation = self.networkType)
             self.resetNextQValueNetwork()
             nextQValues = lasagne.layers.get_output(self.nextQValueNetwork, nextStates / self.inputScale)
-
         else:
             nextQValues = lasagne.layers.get_output(self.qValueNetwork, nextStates / self.inputScale)
             nextQValues = theano.gradient.disconnected_grad(nextQValues)
 
 
-        target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
+
+        if self.useSARSAUpdate:
+            target = rewards + terminals * self.discountRate * nextQValues[T.arange(self.batchSize), nextActions.reshape((-1,))].reshape((-1, 1))
+        else:
+            target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
+
+        # target = rewards + terminals * self.discountRate * T.max(nextQValues, axis = 1, keepdims = True)
         targetDifference = target - qValues[T.arange(self.batchSize), actions.reshape((-1,))].reshape((-1, 1))
 
-        if self.clipDelta > 0:
-            targetDifference = targetDifference.clip(-1.0 * self.clipDelta, self.clipDelta)
+
+        # if self.clipDelta > 0:
+            # targetDifference = targetDifference.clip(-1.0 * self.clipDelta, self.clipDelta)
+
+        quadraticPart = T.minimum(abs(targetDifference), self.clipDelta)
+        linearPart = abs(targetDifference) - quadraticPart
 
         if self.batchAccumulator == "sum":
-            loss = T.sum(targetDifference ** 2)
+            loss = T.sum(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
+            # loss = T.sum(targetDifference ** 2)
         elif self.batchAccumulator == "mean":
-            loss = T.mean(targetDifference ** 2)
+            loss = T.mean(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
+            # loss = T.mean(targetDifference ** 2)
         else:
             raise ValueError("Bad Network Accumulator. {sum, mean} expected")
 
@@ -101,6 +116,7 @@ class DeepQTransferNetwork(object):
             nextStates: self.nextStatesShared,
             rewards:self.rewardsShared,
             actions: self.actionsShared,
+            nextActions: self.nextActionsShared,
             terminals: self.terminalsShared
         }
 
@@ -108,10 +124,11 @@ class DeepQTransferNetwork(object):
         self.__computeQValues = theano.function([], qValues, givens={states: self.statesShared})
 
 
-    def trainNetwork(self, stateBatch, actionBatch, rewardBatch, nextStateBatch, terminalBatch, tasksBatch):
+    def trainNetwork(self, stateBatch, actionBatch, rewardBatch, nextStateBatch, nextActionBatch, terminalBatch, tasksBatch):
         self.statesShared.set_value(stateBatch)
         self.nextStatesShared.set_value(nextStateBatch)
         self.actionsShared.set_value(actionBatch)
+        self.nextActionsShared.set_value(nextActionBatch)
         self.rewardsShared.set_value(rewardBatch)
         self.terminalsShared.set_value(terminalBatch)
 

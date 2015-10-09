@@ -50,7 +50,7 @@ class DQTNAgent(object):
         networkType, updateRule, batchAccumulator, networkUpdateDelay,
         transferExperimentType, numTransferTasks,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
-        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon):        
+        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon, useSARSAUpdate, kReturnLength):        
         self.actionList         = actionList
         self.numActions         = len(self.actionList)
         self.inputHeight        = inputHeight
@@ -78,9 +78,11 @@ class DQTNAgent(object):
         self.numTransferTasks   = numTransferTasks
         self.transferExperimentType = transferExperimentType
         # self.useSharedTransferLayer = useSharedTransferLayer
+        self.kReturnLength      = kReturnLength
+        self.useSARSAUpdate     = useSARSAUpdate
 
-        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, numTasks=self.numTransferTasks)
-        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    numTasks=self.numTransferTasks)
+        self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, self.kReturnLength, numTasks=self.numTransferTasks)
+        self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    self.kReturnLength, numTasks=self.numTransferTasks)
 
         self.episodeCounter    = 0 
         self.stepCounter       = 0
@@ -99,6 +101,7 @@ class DQTNAgent(object):
 
         self.network = DeepQTransferNetwork.DeepQTransferNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
             self.discountRate, self.learningRate, self.rmsRho, self.rmsEpsilon, self.momentum, self.networkUpdateDelay,
+            self.useSARSAUpdate, self.kReturnLength,
             self.transferExperimentType , self.numTransferTasks,
             self.networkType, self.updateRule, self.batchAccumulator)
 
@@ -172,8 +175,8 @@ class DQTNAgent(object):
         return self.actionList[self.actionToTake]
 
     def runTrainingBatch(self):
-        batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
-        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchTerminals, batchTasks)
+        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
+        return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks)
 
 
     def startTrainingEpoch(self, epochNumber):
