@@ -83,10 +83,10 @@ class DeepQNetwork(object):
 
         if self.batchAccumulator == "sum":
             # loss = T.sum(targetDifference ** 2)
-            loss = T.sum(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
+            loss = T.sum(0.5 * quadraticPart ** 2 + self.clip_delta * linearPart)
         elif self.batchAccumulator == "mean":
             # loss = T.mean(targetDifference ** 2)
-            loss = T.mean(0.5 * quadraticPart ** 2 + clip_delta * linearPart)
+            loss = T.mean(0.5 * quadraticPart ** 2 + self.clip_delta * linearPart)
         else:
             raise ValueError("Bad Network Accumulator. {sum, mean} expected")
 
