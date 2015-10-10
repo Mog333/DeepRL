@@ -114,7 +114,7 @@ class DeepQNetwork(object):
             terminals: self.terminalsShared
         }
 
-        self.__trainNetwork = theano.function([], [loss, qValues], updates=updates, givens=lossGivens)
+        self.__trainNetwork = theano.function([], [loss, qValues], updates=updates, givens=lossGivens, on_unused_input='warn')
         self.__computeQValues = theano.function([], qValues, givens={states: self.statesShared})
 
 

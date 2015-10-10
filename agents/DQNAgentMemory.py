@@ -15,7 +15,7 @@ floatX = theano.config.floatX
 
 class DQNAgentMemory(object):
 
-    def __init__(self, stateShape, phiLength=4, memorySize=10000, discountRate, numTasks = 1):
+    def __init__(self, stateShape, phiLength=4, memorySize=10000, discountRate = 1.0, numTasks = 1):
         """ 
         Arguments:
             stateShape - tuple containing the dimensions of the experiences being stored
