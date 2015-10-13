@@ -120,31 +120,25 @@ class DQNAgentMemory(object):
           if True in [self.terminalMemory[i] for i in phiIndices]:
             continue
 
-
-          badSample = False
           currentReturn = 0.0
           currentDiscount = 1.0
+          currentIndex = index
           for i in xrange(0, kReturnLength):
             currentIndex = (index + i) % self.memorySize
-            if self.terminalMemory[ currentIndex ] == True:
-              badSample = True
-              break
-
-            currentReturn += currentDiscount * self.rewardMemory[index + i]
+            currentReturn += currentDiscount * self.rewardMemory[currentIndex]
             currentDiscount *= self.discountRate
 
-          if badSample == True:
-            continue
+            if self.terminalMemory[currentIndex + 1] == True:
+              break
 
-          # if (index + 1 >= self.currentMemoryIndex) and (index < (self.currentMemoryIndex + self.phiLength)):
-            # continue
+          endIndex = currentIndex + 1
 
           batchStates[count]     = self.getPhi(index)
-          batchNextStates[count] = self.getPhi(index + kReturnLength)
+          batchNextStates[count] = self.getPhi(endIndex)
           batchRewards[count]    = currentReturn
           batchActions[count]    = self.actionMemory[index]
-          batchNextActions[count]= self.actionMemory[index + kReturnLength]
-          batchTerminals[count]  = not self.terminalMemory[index + kReturnLength]
+          batchNextActions[count]= self.actionMemory[endIndex]
+          batchTerminals[count]  = not self.terminalMemory[endIndex]
           batchTasks[count]      = self.taskMemory[index]
 
           count += 1
