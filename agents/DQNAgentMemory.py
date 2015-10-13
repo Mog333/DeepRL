@@ -108,17 +108,36 @@ class DQNAgentMemory(object):
         while count < batchSize:
           index = np.random.randint(0, maxIndex - 1)
 
-          #Sample is in area we are currently building experience, ie going forward from this index will loop over an episode boundary
-          if (index + kReturnLength >= self.currentMemoryIndex) and (index < (self.currentMemoryIndex + self.phiLength + kReturnLength - 1)):
+          phiIndices = self.getPhiIndices(index)
+          #Picked a sample too close to start of episode - sample state crosses episode boundary
+          if True in [self.terminalMemory[i] for i in phiIndices]:
             continue
+
           #Sample is not of the current task
           if taskIndex != None and self.taskMemory[index] != taskIndex:
             continue
 
-          #Sample contains a episode boundary when building state (we are less than phiLength after an episode start)
-          phiIndices = self.getPhiIndices(index)
-          if True in [self.terminalMemory[i] for i in phiIndices]:
-            continue
+          #There is a region of experience we dont want to sample from due to filling in new experience in the replay
+          #This area is the region between the current memory index minux the desired return length
+          #and the current memory index plus the phi length 
+          #as memories slightly over the current index will have their phi states invalidated by going between new and old memories
+          #And memories kReturnLength behind the current index cant be sampled as they dont have k steps to form a full k step return
+
+          upperBound = self.currentMemoryIndex + self.phiLength
+          lowerBound = self.currentMemoryIndex - self.kReturnLength
+          if upperBound % self.memorySize < upperBound:
+            #looped over end of circular buffer by finding starting acceptable index thats above the upper bound
+            if index >= lowerBound or index <= upperBound % self.memorySize:
+              continue
+          else:
+            if lowerBound % self.memorySize > lowerBound:
+              #Looped from start to end of circular buffer by subtracting kReturnLength when finding the lower bound
+              if index >= lowerBound % self.memorySize or index <= upperBound:
+                continue
+
+            elif index <= upperBound and index >= lowerBound:
+              continue
+
 
           currentReturn = 0.0
           currentDiscount = 1.0

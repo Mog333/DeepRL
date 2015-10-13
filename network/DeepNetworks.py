@@ -124,7 +124,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv1 = convFunction(
             networkInput, 
-            num_filters = 4, 
+            num_filters = 32, 
             filter_size = (8,8), 
             stride=(4,4), 
             nonlinearity=layerNonlinearity, 
@@ -133,7 +133,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv2 = convFunction(
             conv1, 
-            num_filters = 8, 
+            num_filters = 64, 
             filter_size = (4,4), 
             stride=(2,2), 
             nonlinearity=layerNonlinearity, 
@@ -142,7 +142,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv3 = convFunction(
             conv2, 
-            num_filters = 8, 
+            num_filters = 64, 
             filter_size = (3,3), 
             stride=(1,1), 
             nonlinearity=layerNonlinearity, 
@@ -157,7 +157,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv1 = convFunction(
             networkInput, 
-            num_filters = 4, 
+            num_filters = 32, 
             filter_size = (8,8), 
             stride=(4,4), 
             nonlinearity=layerNonlinearity, 
@@ -167,7 +167,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv2 = convFunction(
             conv1, 
-            num_filters = 8, 
+            num_filters = 64, 
             filter_size = (4,4), 
             stride=(2,2), 
             nonlinearity=layerNonlinearity, 
@@ -177,7 +177,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
         conv3 = convFunction(
             conv2, 
-            num_filters = 8, 
+            num_filters = 64, 
             filter_size = (3,3), 
             stride=(1,1), 
             nonlinearity=layerNonlinearity, 
@@ -187,10 +187,10 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
 
 
     numHiddenUnits = 512
-    if transferExperimentType == "fullShare" or transferExperimentType == "representationShare" :
-        numHiddenUnits /= 8
-    elif transferExperimentType == "layerShare":
-        numHiddenUnits /= 16
+    # if transferExperimentType == "fullShare" or transferExperimentType == "representationShare" :
+    #     numHiddenUnits /= 8
+    # elif transferExperimentType == "layerShare":
+    #     numHiddenUnits /= 16
 
     hiddenLayer = lasagne.layers.DenseLayer(
         conv3,
