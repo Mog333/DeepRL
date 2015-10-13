@@ -124,7 +124,7 @@ class DQNAgentMemory(object):
           #And memories kReturnLength behind the current index cant be sampled as they dont have k steps to form a full k step return
 
           upperBound = self.currentMemoryIndex + self.phiLength
-          lowerBound = self.currentMemoryIndex - self.kReturnLength
+          lowerBound = self.currentMemoryIndex - kReturnLength
           if upperBound % self.memorySize < upperBound:
             #looped over end of circular buffer by finding starting acceptable index thats above the upper bound
             if index >= lowerBound or index <= upperBound % self.memorySize:
