@@ -18,7 +18,7 @@ class Parameters:
     STEPS_PER_EPOCH = 125000
     EPOCHS = 200
     STEPS_PER_TEST = 125000
-    ALL_FLAVOR_STRING = "0_-1"
+    ALL_FLAVOR_STRING = ""
 
     TRANSFER_EXPERIMENT_TYPE = "layerShare"
 
@@ -180,30 +180,36 @@ def processArguments(args, description):
     parser.add_argument('--loadWeightsFlipped', dest="loadWeightsFlipped", type=int, default=defaults.LOAD_WEIGHTS_FLIPPED,
                         help='Load network conv weights fipped.')
 
-
     parser.add_argument('--mode', dest="modeString", type=str, default=defaults.ALL_FLAVOR_STRING,
-                        help='String representation of which game modes to use. Either of form x_y, or w,x,y,...,z.' +
+                        help='String representation of which game modes to use. Either of form x_y, or w,x,y,...,z or x,y;x,z   _ for mode range , for mode separation (single mode or range) and ; to specify different modes for running with multiple games' +
                         '-1 indicates end of mode list')
 
     parser.add_argument('--difficulty', dest="difficultyString", type=str, default=defaults.ALL_FLAVOR_STRING,
-                        help='String representation of which game difficulties to use. Either of form x_y, or w,x,y,...,z'+
+                        help='String representation of which game difficulties to use. Either of form x_y, or w,x,y,...,z or x,y;x,z   _ for diff range , for diff separation (single diff or range) and ; to specify different diffs for running with multiple games'+
                         '-1 indicates end of mode list')
 
     parser.add_argument('--transferExperimentType', dest="transferExperimentType", type=str, default=defaults.TRANSFER_EXPERIMENT_TYPE, help='String specifying the type of transfer experiment (networkShare|layerShare|representationShare)')
-    #parser.add_argument('--useSharedLayer', dest="useSharedLayer", default=False, action="store_true", help='Have a shared component in the transfer layer')
     parser.add_argument('--reduceEpochLengthByNumFlavors', dest="reduceEpochLengthByNumFlavors", default=False, action="store_true", help='Flag to reduce the length of an epoch by the number of flavors')
     parser.add_argument('--evaluationFrequency', dest="evaluationFrequency", type=int, default=1, help=('Evaluation Frequency'))
-
     parser.add_argument('--useSARSAUpdate', dest="useSARSAUpdate", default=False, action="store_true", help='Flag to set the network target update rule to use a sarsa like update by looking at the next action taken rather than the best action taken for computing q value differences')
     parser.add_argument('--kReturnLength', dest="kReturnLength", type=int, default=1, help='Number of steps to look ahead when computing the return')
 
 
-
     parameters = parser.parse_args(args)
 
-    parameters.fullRomPath = os.path.join(parameters.baseRomPath, parameters.rom)
+    roms = parameters.rom.split(",")
+    parameters.roms = []
 
-    if not parameters.rom.endswith(".bin"):
-        parameters.fullRomPath += ".bin"
+    for rom in roms:
+        if rom == "":
+            continue
+
+        newRomPath = os.path.join(parameters.baseRomPath, rom)
+        if not parameters.rom.endswith(".bin"):
+            newRomPath += ".bin"
+
+        parameters.roms.append(newRomPath)
+
+
 
     return parameters

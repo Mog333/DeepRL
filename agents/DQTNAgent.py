@@ -48,6 +48,7 @@ class DQTNAgent(object):
     def __init__(self, actionList, inputHeight, inputWidth, batchSize, phiLength, 
         nnFile, loadWeightsFlipped, updateFrequency, replayMemorySize, replayStartSize,
         networkType, updateRule, batchAccumulator, networkUpdateDelay,
+        transferTaskModule,
         transferExperimentType, numTransferTasks,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
         epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon, useSARSAUpdate, kReturnLength):        
@@ -75,6 +76,7 @@ class DQTNAgent(object):
         self.epsilonEnd         = epsilonEnd
         self.epsilonDecaySteps  = epsilonDecaySteps
         self.evalEpsilon        = evalEpsilon
+        self.transferTaskModule = transferTaskModule
         self.numTransferTasks   = numTransferTasks
         self.transferExperimentType = transferExperimentType
         # self.useSharedTransferLayer = useSharedTransferLayer
@@ -162,7 +164,7 @@ class DQTNAgent(object):
 
         if self.stepCounter >= self.phiLength:
             phi = currentMemory.getPhi()
-            actionIndex = self.network.chooseAction(phi, self.currentTransferTaskIndex, self.epsilon)
+            actionIndex = self.network.chooseAction(phi, self.currentTransferTaskIndex, self.epsilon, self.transferTaskModule.getActionsForCurrentTask())
         else:
             actionIndex = np.random.randint(0, self.numActions - 1)
 

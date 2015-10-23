@@ -1,7 +1,7 @@
 '''
  Author: Robert Post
 
- These functions run a standard DQN experiment.
+ These functions run a standard DQN experiment accross multiple games or flavors of games for transfer learning experiments.
 '''
 
 import sys
@@ -41,21 +41,21 @@ import DQNAgentMemory
 import DQTNAgent
 import TransferTaskModule
 
-def createFlavorList(flavorString, maxNumFlavors):
-    #Creates a list of number out of string for selecting modes/difficulties from a string parameter
-    flavorList = []
-    for s in flavorString.split(','):
-        numRange = s.split('_')
-        if len(numRange) == 1:
-            flavorList.append(int(s))
-        else:
-            start = int(numRange[0])
-            end = int(numRange[-1])
-            if end == -1:
-                end = maxNumFlavors - 1
-            for num in range(start, end + 1):
-                flavorList.append(num)
-    return list(set(flavorList))
+# def createFlavorList(flavorString, maxNumFlavors):
+#     #Creates a list of number out of string for selecting modes/difficulties from a string parameter
+#     flavorList = []
+#     for s in flavorString.split(','):
+#         numRange = s.split('_')
+#         if len(numRange) == 1:
+#             flavorList.append(int(s))
+#         else:
+#             start = int(numRange[0])
+#             end = int(numRange[-1])
+#             if end == -1:
+#                 end = maxNumFlavors - 1
+#             for num in range(start, end + 1):
+#                 flavorList.append(num)
+#     return list(set(flavorList))
 
 def run_experiment(args):
     parameters = Parameters.processArguments(args, __doc__)
@@ -130,29 +130,39 @@ def run_experiment(args):
     ale = ALEInterface()
 
     Environment.initializeALEParameters(ale, parameters.seed, parameters.frameSkip, parameters.repeatActionProbability, parameters.displayScreen)
-    ale.loadROM(parameters.fullRomPath)
-    minimalActions = ale.getMinimalActionSet()
 
-    difficulties = ale.getAvailableDifficulties()
-    modes = ale.getAvailableModes()
 
-    maxNumFlavors = len(difficulties) * len(modes)
 
-    difficulties = createFlavorList(parameters.difficultyString, len(difficulties))
-    modes = createFlavorList(parameters.modeString, len(modes))
 
-    transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
+    # ale.loadROM(parameters.fullRomPath)
 
-    print "Num difficulties: " + str(len(difficulties)) + " num modes: " + str(len(modes)) + " numtasks: " + str(transferTaskModule.getNumTasks())
-    print "Modes: " + str(modes)
-    print "Difficulties: " + str(difficulties)
+    # minimalActions = ale.getMinimalActionSet()
+
+    # difficulties = ale.getAvailableDifficulties()
+    # modes = ale.getAvailableModes()
+
+    # maxNumFlavors = len(difficulties) * len(modes)
+
+    # difficulties = createFlavorList(parameters.difficultyString, len(difficulties))
+    # modes = createFlavorList(parameters.modeString, len(modes))
+
+    # transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
+
+
+    transferTaskModule = TransferTaskModule.TransferTaskModule(ale, parameters.roms, parameters.difficultyString, parameters.modeString)
+    numActionsToUse = transferTaskModule.getNumTotalActions()
+    print "Number of total tasks:" + str(transferTaskModule.getNumTasks()) + " across " + str(transferTaskModule.getNumGames()) + " games."
+    print "Actions List:" + str(transferTaskModule.getTotalActionsList())
+    # print "Num difficulties: " + str(len(difficulties)) + " num modes: " + str(len(modes)) + " numtasks: " + str(transferTaskModule.getNumTasks())
+    # print "Modes: " + str(modes)
+    # print "Difficulties: " + str(difficulties)
 
     numTransferTasks = transferTaskModule.getNumTasks()
 
     if (parameters.reduceEpochLengthByNumFlavors):
-        parameters.stepsPerEpoch = int(parameters.stepsPerEpoch / maxNumFlavors)
+        parameters.stepsPerEpoch = int(parameters.stepsPerEpoch / numTransferTasks)
 
-    agent = DQTNAgent.DQTNAgent(minimalActions, parameters.croppedHeight, parameters.croppedWidth, 
+    agent = DQTNAgent.DQTNAgent(transferTaskModule.getTotalActionsList(), parameters.croppedHeight, parameters.croppedWidth, 
                 parameters.batchSize, 
                 parameters.phiLength,
                 parameters.nnFile, 
@@ -164,6 +174,7 @@ def run_experiment(args):
                 parameters.updateRule, 
                 parameters.batchAccumulator, 
                 parameters.networkUpdateDelay,
+                transferTaskModule,
                 parameters.transferExperimentType,
                 numTransferTasks,
                 parameters.discountRate, 
@@ -216,9 +227,10 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule):
         numEpisodes += 1
 
         lowestSamplesTask = agent.trainingMemory.getLowestSampledTask()
-        diff, mode = transferTaskModule.getTaskTuple(lowestSamplesTask)
-        ale.setMode(mode)
-        ale.setDifficulty(diff)
+        transferTaskModule.changeToTask(lowestSamplesTask)
+        # diff, mode = transferTaskModule.getTaskTuple(lowestSamplesTask)
+        # ale.setMode(mode)
+        # ale.setDifficulty(diff)
 
         startTime = time.time()
         stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, lowestSamplesTask)
@@ -235,10 +247,11 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
         stepsRemaining = stepsPerTest
         numEpisodes = 0
         totalReward = 0
-
-        diff, mode = transferTaskModule.getTaskTuple(currentEpisodeTask)
-        ale.setMode(mode)
-        ale.setDifficulty(diff)
+        
+        transferTaskModule.changeToTask(currentEpisodeTask)
+        # diff, mode = transferTaskModule.getTaskTuple(currentEpisodeTask)        
+        # ale.setMode(mode)
+        # ale.setDifficulty(diff)
 
         while stepsRemaining > 0:
             numEpisodes += 1

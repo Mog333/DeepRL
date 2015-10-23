@@ -155,12 +155,18 @@ class DeepQTransferNetwork(object):
         return self.__computeQValues()[0]
 
 
-    def chooseAction(self, state, currentTask, epsilon):
+    def chooseAction(self, state, currentTask, epsilon, actionsToSelectFrom = []):
+        if actionsToSelectFrom == []:
+            actionsToSelectFrom = [x for x in xrange(0, self.numActions)]
+
         if np.random.rand() < epsilon:
-            return np.random.randint(0, self.numActions)
+            index = np.random.randint(0, len(actionsToSelectFrom))
+            return actionsToSelectFrom[index]
 
         qValues = self.computeQValues(state, currentTask)
-        return np.argmax(qValues)
+        reducedQValues = [qValues[i] for i in xrange(0, self.numActions) if i in actionsToSelectFrom]
+
+        return np.argmax(reducedQValues)
 
     def resetNextQValueNetwork(self):
         networkParameters = lasagne.layers.helper.get_all_param_values(self.qValueNetwork)
