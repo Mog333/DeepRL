@@ -198,7 +198,7 @@ class DQTNAgent(object):
         taskHoldoutAverageQValues = []
 
         for taskIndex in xrange(self.numTransferTasks):
-            holdoutTaskBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize, taskIndex)
+            holdoutTaskBatchData = self.trainingMemory.getRandomExperienceBatch(holdoutSize, kReturnLength = self.kReturnLength, taskIndex = taskIndex)
             holdoutStates    = holdoutTaskBatchData[0]
             holdoutSum       = 0
 

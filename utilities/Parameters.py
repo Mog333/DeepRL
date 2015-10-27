@@ -188,7 +188,7 @@ def processArguments(args, description):
                         help='String representation of which game difficulties to use. Either of form x_y, or w,x,y,...,z or x,y;x,z   _ for diff range , for diff separation (single diff or range) and ; to specify different diffs for running with multiple games'+
                         '-1 indicates end of mode list')
 
-    parser.add_argument('--transferExperimentType', dest="transferExperimentType", type=str, default=defaults.TRANSFER_EXPERIMENT_TYPE, help='String specifying the type of transfer experiment (networkShare|layerShare|representationShare)')
+    parser.add_argument('--transferExperimentType', dest="transferExperimentType", type=str, default=defaults.TRANSFER_EXPERIMENT_TYPE, help='String specifying the type of transfer experiment (fullShare|layerShare|representationShare)')
     parser.add_argument('--reduceEpochLengthByNumFlavors', dest="reduceEpochLengthByNumFlavors", default=False, action="store_true", help='Flag to reduce the length of an epoch by the number of flavors')
     parser.add_argument('--evaluationFrequency', dest="evaluationFrequency", type=int, default=1, help=('Evaluation Frequency'))
     parser.add_argument('--useSARSAUpdate', dest="useSARSAUpdate", default=False, action="store_true", help='Flag to set the network target update rule to use a sarsa like update by looking at the next action taken rather than the best action taken for computing q value differences')
