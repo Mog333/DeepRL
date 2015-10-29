@@ -147,10 +147,10 @@ class DQNAgentMemory(object):
             currentReturn += currentDiscount * self.rewardMemory[currentIndex]
             currentDiscount *= self.discountRate
 
-            if self.terminalMemory[currentIndex + 1] == True:
-              break
+            endIndex = (currentIndex + 1) % self.memorySize
 
-          endIndex = currentIndex + 1
+            if self.terminalMemory[endIndex] == True:
+              break
 
           batchStates[count]     = self.getPhi(index)
           batchNextStates[count] = self.getPhi(endIndex)
