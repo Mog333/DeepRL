@@ -20,7 +20,7 @@ class Parameters:
     STEPS_PER_TEST = 125000
     ALL_FLAVOR_STRING = ""
 
-    TRANSFER_EXPERIMENT_TYPE = "layerShare"
+    TRANSFER_EXPERIMENT_TYPE = "fullShare"
 
     # ----------------------
     # ALE Parameters

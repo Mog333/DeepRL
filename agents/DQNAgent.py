@@ -56,7 +56,7 @@ class DQNAgent(object):
         self.inputWidth         = inputWidth
         self.batchSize          = batchSize
         self.phiLength          = phiLength
-        self.nnFile            = nnFile
+        self.nnFile             = nnFile
         self.loadWeightsFlipped = loadWeightsFlipped
         self.updateFrequency    = updateFrequency
         self.replayMemorySize   = replayMemorySize
@@ -170,7 +170,7 @@ class DQNAgent(object):
         return self.actionList[self.actionToTake]
 
     def runTrainingBatch(self):
-        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize)
+        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize, kReturnLength = self.kReturnLength)
         return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals)
 
 
