@@ -116,9 +116,6 @@ def run_experiment(args):
 
     Environment.initializeALEParameters(ale, parameters.seed, parameters.frameSkip, parameters.repeatActionProbability, parameters.displayScreen)
 
-
-
-
     # ale.loadROM(parameters.fullRomPath)
 
     # minimalActions = ale.getMinimalActionSet()
@@ -178,7 +175,7 @@ def run_experiment(args):
 
     for epoch in xrange(startingEpoch, parameters.epochs + 1):
         agent.startTrainingEpoch(epoch)
-        runTrainingEpoch(ale, agent, epoch, parameters.stepsPerEpoch, transferTaskModule)
+        runTrainingEpoch(ale, agent, epoch, parameters.stepsPerEpoch, transferTaskModule, parameters.frameSkip)
         agent.endTrainingEpoch(epoch)
 
         networkFileName = experimentDirectory + "network_" + str(epoch) + ".pkl"
@@ -186,7 +183,7 @@ def run_experiment(args):
 
         if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)
-            avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule)
+            avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule, parameters.frameSkip)
             holdoutQVals = agent.computeHoldoutQValues(3200)
 
             resultsFile = open(resultsFileName, 'a')
@@ -204,7 +201,7 @@ def run_experiment(args):
 
     agent.agentCleanup()
 
-def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule):
+def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule, frameSkip):
     stepsRemaining = stepsPerEpoch
     numEpisodes = 0
     print "Starting Training epoch: " + str(epoch)
@@ -218,14 +215,14 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule):
         # ale.setDifficulty(diff)
 
         startTime = time.time()
-        stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, lowestSamplesTask)
+        stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, lowestSamplesTask, frameSkip)
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
         print "TRAINING: Task: "+ str(lowestSamplesTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
         sys.stdout.flush()
 
-def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
+def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule, frameSkip):
     print "Starting Evaluation epoch: " + str(epoch)
     taskAverageRewards = []
     for currentEpisodeTask in xrange(transferTaskModule.getNumTasks()):
@@ -242,7 +239,7 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
             numEpisodes += 1
 
             startTime = time.time()
-            stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, currentEpisodeTask)
+            stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip)
             endTime = time.time() - startTime
             fps = stepsTaken / endTime
             stepsRemaining -= stepsTaken
@@ -255,28 +252,47 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule):
 
 
 
-def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask):
+def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
     maxEpisodeDuration = 60 * 60 * 5 #Max game duration is 5 minutes, at 60 fps
     framesElapsed       = 0
     totalEpisodeReward  = 0
     ale_game_over       = False
+    screenBuffer = np.zeros((2, 210, 160))
+    screenBufferIndex = 0
+    frameSkipCounter = 0
+    rewardPool = 0
 
     screenObservation = ale.getScreenRGB()
+    grayScreenObservation = Preprocessing.grayScaleALEObservation(screenObservation)
+    screenBuffer[screenBufferIndex] = grayScreenObservation
+    screenBufferIndex = (screenBufferIndex + 1) % 2
 
-    preprocessedObservation = Preprocessing.preprocessALEObservation(screenObservation, agent.inputHeight, agent.inputWidth)
+    preprocessedObservation = Preprocessing.resizeALEObservation(grayScreenObservation, agent.inputHeight, agent.inputWidth)
     action = agent.startEpisode(preprocessedObservation, currentEpisodeTask)
 
     while not ale_game_over and framesElapsed < stepsRemaining and framesElapsed < maxEpisodeDuration:
 
         framesElapsed += 1
-        reward = ale.act(action)
+
+        frameSkipCounter = 0
+        while frameSkipCounter < frameSkip:
+            rewardPool += ale.act(action)
+            screenObservation = ale.getScreenRGB()
+            grayScreenObservation = Preprocessing.grayScaleALEObservation(screenObservation)
+            screenBuffer[screenBufferIndex] = grayScreenObservation
+            screenBufferIndex = (screenBufferIndex + 1) % 2
+            frameSkipCounter += 1
+
+        reward = rewardPool
+        rewardPool = 0
+
         totalEpisodeReward += reward
 
         if ale.game_over():
           ale_game_over = True
 
-        screenObservation = ale.getScreenRGB()
-        preprocessedObservation = Preprocessing.preprocessALEObservation(screenObservation, agent.inputHeight, agent.inputWidth)
+        maxImage = np.maximum(screenBuffer[screenBufferIndex, ...], screenBuffer[screenBufferIndex - 1, ...])
+        preprocessedObservation = Preprocessing.resizeALEObservation(maxImage, agent.inputHeight, agent.inputWidth)
 
         action = agent.stepEpisode(reward, preprocessedObservation)
 

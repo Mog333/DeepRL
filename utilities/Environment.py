@@ -14,7 +14,7 @@ def initializeSDL(ale):
 
 def initializeALEParameters(ale, seed, frameSkip, repeatActionProbability, initSDL = False):
     ale.setInt("random_seed", seed)
-    ale.setInt("frame_skip", frameSkip)
+    # ale.setInt("frame_skip", frameSkip)
     ale.setFloat("repeat_action_probability", repeatActionProbability)
     ale.setBool("showinfo", False)
 
