@@ -60,6 +60,7 @@ class Parameters:
     PHI_LENGTH = 4
     UPDATE_FREQUENCY = 4
     REPLAY_MEMORY_SIZE = 1000000
+    MAX_NO_ACTIONS = 30
     BATCH_SIZE = 32
     NETWORK_TYPE = "conv"
     NETWORK_UPDATE_DELAY = 10000
@@ -194,6 +195,7 @@ def processArguments(args, description):
     parser.add_argument('--useSARSAUpdate', dest="useSARSAUpdate", default=False, action="store_true", help='Flag to set the network target update rule to use a sarsa like update by looking at the next action taken rather than the best action taken for computing q value differences')
     parser.add_argument('--kReturnLength', dest="kReturnLength", type=int, default=1, help='Number of steps to look ahead when computing the return')
     parser.add_argument('--deathEndsEpisode', dest="deathEndsEpisode", default=False, action="store_true", help='Flag to set the loss of life to trigger the end of an episode.')
+    parser.add_argument('--maxNoActions', dest="maxNoActions", type=int, default=defaults.MAX_NO_ACTIONS, help='The maximum number of no ops (action 0) that will be executed at the start of an episode')
 
 
     parameters = parser.parse_args(args)

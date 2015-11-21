@@ -176,7 +176,7 @@ def run_experiment(args):
 
     for epoch in xrange(startingEpoch, parameters.epochs + 1):
         agent.startTrainingEpoch(epoch)
-        runTrainingEpoch(ale, agent, epoch, parameters.stepsPerEpoch, transferTaskModule, parameters.frameSkip)
+        runTrainingEpoch(ale, agent, epoch, parameters.stepsPerEpoch, transferTaskModule, parameters.frameSkip, parameters.maxNoActions)
         agent.endTrainingEpoch(epoch)
 
         networkFileName = experimentDirectory + "network_" + str(epoch) + ".pkl"
@@ -184,7 +184,7 @@ def run_experiment(args):
 
         if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)
-            avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule, parameters.frameSkip)
+            avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule, parameters.frameSkip, parameters.maxNoActions)
             holdoutQVals = agent.computeHoldoutQValues(3200)
 
             resultsFile = open(resultsFileName, 'a')
@@ -202,7 +202,7 @@ def run_experiment(args):
 
     agent.agentCleanup()
 
-def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule, frameSkip):
+def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule, frameSkip, maxNoActions):
     stepsRemaining = stepsPerEpoch
     numEpisodes = 0
     print "Starting Training epoch: " + str(epoch)
@@ -211,19 +211,16 @@ def runTrainingEpoch(ale, agent, epoch, stepsPerEpoch, transferTaskModule, frame
 
         lowestSamplesTask = agent.trainingMemory.getLowestSampledTask()
         transferTaskModule.changeToTask(lowestSamplesTask)
-        # diff, mode = transferTaskModule.getTaskTuple(lowestSamplesTask)
-        # ale.setMode(mode)
-        # ale.setDifficulty(diff)
 
         startTime = time.time()
-        stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, lowestSamplesTask, frameSkip)
+        stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, lowestSamplesTask, frameSkip, maxNoActions)
         endTime = time.time() - startTime
         fps = stepsTaken / endTime
         stepsRemaining -= stepsTaken
         print "TRAINING: Task: "+ str(lowestSamplesTask) + " Steps Left: " + str(stepsRemaining) + "\tsteps taken: " + str(stepsTaken) + "\tfps: "+str(round(fps, 4)) + "\tepisode reward: " +str(epsiodeReward) + "\tavgLoss: " + str(avgLoss)        
         sys.stdout.flush()
 
-def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule, frameSkip):
+def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule, frameSkip, maxNoActions):
     print "Starting Evaluation epoch: " + str(epoch)
     taskAverageRewards = []
     for currentEpisodeTask in xrange(transferTaskModule.getNumTasks()):
@@ -232,15 +229,12 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule, fram
         totalReward = 0
         
         transferTaskModule.changeToTask(currentEpisodeTask)
-        # diff, mode = transferTaskModule.getTaskTuple(currentEpisodeTask)        
-        # ale.setMode(mode)
-        # ale.setDifficulty(diff)
 
         while stepsRemaining > 0:
             numEpisodes += 1
 
             startTime = time.time()
-            stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip)
+            stepsTaken, epsiodeReward, avgLoss = runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoActions)
             endTime = time.time() - startTime
             fps = stepsTaken / endTime
             stepsRemaining -= stepsTaken
@@ -253,7 +247,7 @@ def runEvaluationEpoch(ale, agent, epoch, stepsPerTest, transferTaskModule, fram
 
 
 
-def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
+def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoActions):
     maxEpisodeDuration = 60 * 60 * 5 #Max game duration is 5 minutes, at 60 fps
     framesElapsed       = 0
     totalEpisodeReward  = 0
@@ -262,7 +256,14 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
     screenBufferIndex = 0
     frameSkipCounter = 0
     rewardPool = 0
-    startingLives = ale.lives()
+    startingLives = -1
+
+    if maxNoActions > 0:
+        numNoActionsToTake = np.random.randint(0, maxNoActions)
+        print numNoActionsToTake
+        reward = 0
+        for x in xrange(numNoActionsToTake):
+            ale.act(0)
 
     screenObservation = ale.getScreenRGB()
     grayScreenObservation = Preprocessing.grayScaleALEObservation(screenObservation)
@@ -287,6 +288,9 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
         rewardPool = 0
 
         totalEpisodeReward += reward
+
+        if not ale.game_over() and startingLives == -1:
+            startingLives = ale.lives()
 
         if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
             ale_game_over = True
