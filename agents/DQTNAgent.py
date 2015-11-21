@@ -51,7 +51,7 @@ class DQTNAgent(object):
         transferTaskModule,
         transferExperimentType, numTransferTasks,
         discountRate, learningRate, rmsRho, rmsEpsilon, momentum,
-        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon, useSARSAUpdate, kReturnLength):        
+        epsilonStart, epsilonEnd, epsilonDecaySteps, evalEpsilon, useSARSAUpdate, kReturnLength, deathEndsEpisode):        
         self.actionList         = actionList
         self.numActions         = len(self.actionList)
         self.inputHeight        = inputHeight
@@ -82,6 +82,7 @@ class DQTNAgent(object):
         # self.useSharedTransferLayer = useSharedTransferLayer
         self.kReturnLength      = kReturnLength
         self.useSARSAUpdate     = useSARSAUpdate
+        self.deathEndsEpisode   = deathEndsEpisode
 
         self.trainingMemory  =DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.replayMemorySize, self.discountRate, numTasks=self.numTransferTasks)
         self.evaluationMemory=DQNAgentMemory.DQNAgentMemory((self.inputHeight, self.inputWidth), self.phiLength, self.phiLength * 2,    self.discountRate, numTasks=self.numTransferTasks)

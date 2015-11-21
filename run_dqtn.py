@@ -169,7 +169,8 @@ def run_experiment(args):
                 parameters.epsilonDecaySteps,
                 parameters.evalEpsilon,
                 parameters.useSARSAUpdate,
-                parameters.kReturnLength)
+                parameters.kReturnLength,
+                parameters.deathEndsEpisode)
 
 
 
@@ -261,6 +262,7 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
     screenBufferIndex = 0
     frameSkipCounter = 0
     rewardPool = 0
+    startingLives = ale.lives()
 
     screenObservation = ale.getScreenRGB()
     grayScreenObservation = Preprocessing.grayScaleALEObservation(screenObservation)
@@ -271,9 +273,7 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
     action = agent.startEpisode(preprocessedObservation, currentEpisodeTask)
 
     while not ale_game_over and framesElapsed < stepsRemaining and framesElapsed < maxEpisodeDuration:
-
         framesElapsed += 1
-
         frameSkipCounter = 0
         while frameSkipCounter < frameSkip:
             rewardPool += ale.act(action)
@@ -288,8 +288,8 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip):
 
         totalEpisodeReward += reward
 
-        if ale.game_over():
-          ale_game_over = True
+        if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
+            ale_game_over = True
 
         maxImage = np.maximum(screenBuffer[screenBufferIndex, ...], screenBuffer[screenBufferIndex - 1, ...])
         preprocessedObservation = Preprocessing.resizeALEObservation(maxImage, agent.inputHeight, agent.inputWidth)

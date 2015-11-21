@@ -193,6 +193,7 @@ def processArguments(args, description):
     parser.add_argument('--evaluationFrequency', dest="evaluationFrequency", type=int, default=1, help=('Evaluation Frequency'))
     parser.add_argument('--useSARSAUpdate', dest="useSARSAUpdate", default=False, action="store_true", help='Flag to set the network target update rule to use a sarsa like update by looking at the next action taken rather than the best action taken for computing q value differences')
     parser.add_argument('--kReturnLength', dest="kReturnLength", type=int, default=1, help='Number of steps to look ahead when computing the return')
+    parser.add_argument('--deathEndsEpisodes', dest="deathEndsEpisodes", default=False, action="store_true", help='Flag to set the loss of life to trigger the end of an episode.')
 
 
     parameters = parser.parse_args(args)
