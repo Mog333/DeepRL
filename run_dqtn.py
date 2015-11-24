@@ -260,7 +260,6 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoA
 
     if maxNoActions > 0:
         numNoActionsToTake = np.random.randint(0, maxNoActions)
-        print numNoActionsToTake
         reward = 0
         for x in xrange(numNoActionsToTake):
             ale.act(0)

@@ -15,7 +15,7 @@ class Parameters:
     # ----------------------
     # Experiment Parameters
     # ----------------------
-    STEPS_PER_EPOCH = 125000
+    STEPS_PER_EPOCH = 250000
     EPOCHS = 200
     STEPS_PER_TEST = 125000
     ALL_FLAVOR_STRING = ""
