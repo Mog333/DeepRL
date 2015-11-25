@@ -55,15 +55,17 @@ class TransferLayer(lasagne.layers.Layer):
     :class:`FlattenLayer` in this case.
     """
 
-    def __init__(self, incoming, num_tasks, num_units, use_shared_layer = True, W=lasagne.init.GlorotUniform(), b=lasagne.init.Constant(0.), nonlinearity=lasagne.nonlinearities.rectify, **kwargs):
+    def __init__(self, incoming, num_tasks, num_units, taskBatchFlag = 0, use_shared_layer = True, W=lasagne.init.GlorotUniform(), b=lasagne.init.Constant(0.), nonlinearity=lasagne.nonlinearities.rectify, **kwargs):
         super(TransferLayer, self).__init__(incoming, **kwargs)
 
-        self.nonlinearity = (lasagne.nonlinearities.identity if nonlinearity is None else nonlinearity)
-
-        self.num_tasks = num_tasks
-        self.num_units = num_units
+        self.nonlinearity     = (lasagne.nonlinearities.identity if nonlinearity is None else nonlinearity)
+        self.num_tasks        = num_tasks
+        self.num_units        = num_units
         self.use_shared_layer = use_shared_layer
-        self.batchSize = self.input_shape[0]
+        self.batchSize        = self.input_shape[0]
+        self.taskBatchFlag    = taskBatchFlag
+        
+        assert self.taskBatchFlag >= 0
 
         self.taskIndices = theano.shared(np.zeros(self.batchSize, dtype='int32'))
         num_inputs = int(np.prod(self.input_shape[1:]))
@@ -90,15 +92,21 @@ class TransferLayer(lasagne.layers.Layer):
             input = input.flatten(2)
 
         if self.W_Shared is not None:
-            activation = T.batched_dot(input,self.W[self.taskIndices] + [self.W_Shared] * self.batchSize)
+            if self.taskBatchFlag == 0:
+                activation = T.batched_dot(input,self.W[self.taskIndices] + [self.W_Shared] * self.batchSize)
+            elif self.taskBatchFlag > 0:
+                activation = T.dot(input, self.W[self.taskIndices[0]] + self.W_Shared)
         else:
             #activation = T.batched_dot(input,self.W[self.taskIndices])
-	    if self.num_tasks == 1:
+	        if self.num_tasks == 1:
                 #Using transferlayer as normal dense layer
                 activation = T.dot(input,self.W[0])
             else:
-                activation = T.batched_dot(input,self.W[self.taskIndices])
-        
+                if self.taskBatchFlag == 0:
+                    activation = T.batched_dot(input,self.W[self.taskIndices])
+                elif self.taskBatchFlag > 0:
+                    activation = T.dot(input, self.W[self.taskIndices[0]])
+
         if self.b is not None:
             activation = activation + self.b.dimshuffle('x', 0)
         return self.nonlinearity(activation)

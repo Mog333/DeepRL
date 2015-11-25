@@ -131,7 +131,7 @@ def run_experiment(args):
     # transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
 
 
-    transferTaskModule = TransferTaskModule.TransferTaskModule(ale, parameters.roms, parameters.difficultyString, parameters.modeString)
+    transferTaskModule = TransferTaskModule.TransferTaskModule(ale, parameters.roms, parameters.difficultyString, parameters.modeString, taskBatchFlag)
     numActionsToUse = transferTaskModule.getNumTotalActions()
     print "Number of total tasks:" + str(transferTaskModule.getNumTasks()) + " across " + str(transferTaskModule.getNumGames()) + " games."
     print "Actions List:" + str(transferTaskModule.getTotalActionsList())
@@ -181,6 +181,9 @@ def run_experiment(args):
 
         networkFileName = experimentDirectory + "network_" + str(epoch) + ".pkl"
         DeepNetworks.saveNetworkParams(agent.network.qValueNetwork, networkFileName)
+
+        print "Total number of samples seen per task: "
+        print str(agent.trainingMemory.totalTaskSampleCount)
 
         if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)

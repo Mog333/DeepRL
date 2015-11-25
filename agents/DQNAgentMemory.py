@@ -33,6 +33,7 @@ class DQNAgentMemory(object):
         self.numTasks               = numTasks
         self.discountRate           = discountRate
         self.taskSampleCount        = np.zeros(self.numTasks, dtype='int32')
+        self.totalTaskSampleCount   = np.zeros(self.numTasks, dtype='int32')
 
         self.stateMemory            = np.zeros((self.memorySize,) + self.stateShape , dtype = 'uint8')
         self.rewardMemory           = np.zeros(self.memorySize, dtype = floatX)
@@ -65,8 +66,10 @@ class DQNAgentMemory(object):
         if self.taskMemory[memoryIndex] != -1:
             #Overwritting another memory
             self.taskSampleCount[self.taskMemory[memoryIndex]] -= 1
-        self.taskSampleCount[taskIndex] += 1
-        self.taskMemory[memoryIndex]       = taskIndex
+
+        self.taskSampleCount[taskIndex]      += 1
+        self.totalTaskSampleCount[taskIndex] += 1
+        self.taskMemory[memoryIndex]          = taskIndex
 
         self.currentMemoryIndex = (self.currentMemoryIndex  + 1) % self.memorySize
         self.numberOfExperiences += 1
@@ -91,6 +94,10 @@ class DQNAgentMemory(object):
     def getRandomExperienceBatch(self, batchSize, kReturnLength = 1, taskIndex = None):
         assert batchSize < self.numberOfExperiences - self.phiLength + 1
         assert kReturnLength > 0
+
+        if taskIndex is not None:
+          #We cant make a batch of this task as we dont have enough samples!
+          assert self.taskSampleCount[taskIndex] > batchSize
 
         experienceStateShape = (batchSize, self.phiLength) + self.stateShape
 

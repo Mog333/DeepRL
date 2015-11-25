@@ -43,11 +43,12 @@ def createFlavorList(flavorString, availableFlavors):
 #     return list(set(flavorList))
 
 class TransferTaskModule():
-    def __init__(self, ale, gameList, difficultyString= "", modeString= ""):
+    def __init__(self, ale, gameList, difficultyString= "", modeString= "", taskBatchFlag = 0):
         self.ale = ale
         self.gameList = gameList
         self.gameInfo = []
-
+        self.taskBatchFlag = taskBatchFlag
+        
         #Default to 0th difficulty and mode for all games when not specified
         if difficultyString == "":
             numGames = len(gameList)

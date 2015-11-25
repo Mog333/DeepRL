@@ -20,7 +20,6 @@ import TransferLayer
 def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
     networkInput = lasagne.layers.InputLayer(shape=(batchSize, numChannels, inputHeight, inputWidth))
 
-
     if convImplementation == "conv" or convImplementation == "dnn":
         if convImplementation == "conv":
             convFunction = lasagne.layers.conv.Conv2DLayer
@@ -109,9 +108,7 @@ def buildDeepQNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutput
     return outputLayer
 
 
-
-
-def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, transferExperimentType, numTasks, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
+def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, numOutputs, transferExperimentType, numTasks, taskBatchFlag, convImplementation = "conv", layerNonlinearity = lasagne.nonlinearities.rectify):
     networkInput = lasagne.layers.InputLayer(shape=(batchSize, numChannels, inputHeight, inputWidth))
 
 
@@ -212,6 +209,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
             hiddenLayer,
             num_tasks = numTasks,
             num_units = numOutputs,
+            taskBatchFlag = taskBatchFlag,
             use_shared_layer = True,
             W = lasagne.init.HeUniform(),
             b = lasagne.init.Constant(.1), 
@@ -222,6 +220,7 @@ def buildDeepQTransferNetwork(batchSize, numChannels, inputHeight, inputWidth, n
             hiddenLayer,
             num_tasks = numTasks,
             num_units = numOutputs,
+            taskBatchFlag = taskBatchFlag,
             use_shared_layer = False,
             W = lasagne.init.HeUniform(),
             b = lasagne.init.Constant(.1), 

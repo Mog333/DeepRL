@@ -90,9 +90,10 @@ class DQTNAgent(object):
         self.episodeCounter    = 0 
         self.stepCounter       = 0
         self.batchCounter      = 0
-        self.lossAverages      = []
         self.actionToTake      = 0
         self.transferTaskIndex = 0
+        self.nextTaskSampled   = -1
+        self.lossAverages      = []
 
         self.epsilon = self.epsilonStart
         if self.epsilonDecaySteps != 0:
@@ -105,7 +106,7 @@ class DQTNAgent(object):
         self.network = DeepQTransferNetwork.DeepQTransferNetwork(self.batchSize, self.phiLength, self.inputHeight, self.inputWidth, self.numActions,
             self.discountRate, self.learningRate, self.rmsRho, self.rmsEpsilon, self.momentum, self.networkUpdateDelay,
             self.useSARSAUpdate, self.kReturnLength,
-            self.transferExperimentType , self.numTransferTasks,
+            self.transferExperimentType , self.numTransferTasks, self.transferTaskModule.taskBatchFlag,
             self.networkType, self.updateRule, self.batchAccumulator)
 
         if self.nnFile is not None:
@@ -178,7 +179,15 @@ class DQTNAgent(object):
         return self.actionList[self.actionToTake]
 
     def runTrainingBatch(self):
-        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize, kReturnLength = self.kReturnLength)
+
+        if self.transferTaskModule.taskBatchFlag == 0:
+            self.nextTaskSampled = None
+        elif self.transferTaskModule.taskBatchFlag == 1:
+            self.nextTaskSampled = (self.nextTaskSampled + 1) % self.transferTaskModule.getNumTasks()
+        elif self.transferTaskModule.taskBatchFlag == 2:
+            self.nextTaskSampled = np.random.randint(0, self.transferTaskModule.getNumTasks())
+
+        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize, kReturnLength = self.kReturnLength, self.nextTaskSampled)
         return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks)
 
 
