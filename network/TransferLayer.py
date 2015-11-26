@@ -64,7 +64,7 @@ class TransferLayer(lasagne.layers.Layer):
         self.use_shared_layer = use_shared_layer
         self.batchSize        = self.input_shape[0]
         self.taskBatchFlag    = taskBatchFlag
-        
+
         assert self.taskBatchFlag >= 0
 
         self.taskIndices = theano.shared(np.zeros(self.batchSize, dtype='int32'))
@@ -97,8 +97,7 @@ class TransferLayer(lasagne.layers.Layer):
             elif self.taskBatchFlag > 0:
                 activation = T.dot(input, self.W[self.taskIndices[0]] + self.W_Shared)
         else:
-            #activation = T.batched_dot(input,self.W[self.taskIndices])
-	        if self.num_tasks == 1:
+            if self.num_tasks == 1:
                 #Using transferlayer as normal dense layer
                 activation = T.dot(input,self.W[0])
             else:
