@@ -187,7 +187,7 @@ class DQTNAgent(object):
         elif self.transferTaskModule.taskBatchFlag == 2:
             self.nextTaskSampled = np.random.randint(0, self.transferTaskModule.getNumTasks())
 
-        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize, kReturnLength = self.kReturnLength, self.nextTaskSampled)
+        batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks = self.trainingMemory.getRandomExperienceBatch(self.batchSize, kReturnLength = self.kReturnLength, taskIndex = self.nextTaskSampled)
         return self.network.trainNetwork(batchStates, batchActions, batchRewards, batchNextStates, batchNextActions, batchTerminals, batchTasks)
 
 

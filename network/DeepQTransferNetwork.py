@@ -38,7 +38,7 @@ class DeepQTransferNetwork(object):
         self.clipDelta          = clipDelta
         self.updateCounter      = 0
         self.taskBatchFlag      = taskBatchFlag
-        self.numTransferTasks   = numTransferTaskstransferTaskModule
+        self.numTransferTasks   = numTransferTasks
         self.transferExperimentType = transferExperimentType
         # self.useSharedTransferLayer = useSharedTransferLayer
 

@@ -131,7 +131,7 @@ def run_experiment(args):
     # transferTaskModule = TransferTaskModule.TransferTaskModule(difficulties, modes)
 
 
-    transferTaskModule = TransferTaskModule.TransferTaskModule(ale, parameters.roms, parameters.difficultyString, parameters.modeString, taskBatchFlag)
+    transferTaskModule = TransferTaskModule.TransferTaskModule(ale, parameters.roms, parameters.difficultyString, parameters.modeString, parameters.taskBatchFlag)
     numActionsToUse = transferTaskModule.getNumTotalActions()
     print "Number of total tasks:" + str(transferTaskModule.getNumTasks()) + " across " + str(transferTaskModule.getNumGames()) + " games."
     print "Actions List:" + str(transferTaskModule.getTotalActionsList())
@@ -188,7 +188,7 @@ def run_experiment(args):
         if parameters.stepsPerTest > 0 and epoch % parameters.evaluationFrequency == 0:
             agent.startEvaluationEpoch(epoch)
             avgRewardPerTask = runEvaluationEpoch(ale, agent, epoch, parameters.stepsPerTest, transferTaskModule, parameters.frameSkip, parameters.maxNoActions)
-            holdoutQVals = agent.computeHoldoutQValues(3200)
+            holdoutQVals = agent.computeHoldoutQValues(parameters.numHoldoutQValues)
 
             resultsFile = open(resultsFileName, 'a')
             resultsFile.write(str(epoch) + ",\t")
