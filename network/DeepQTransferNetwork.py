@@ -154,9 +154,9 @@ class DeepQTransferNetwork(object):
 
         for transferLayer in self.hiddenTransferLayers:
             if transferLayer is not None:
-            currentTaskIndices = transferLayer.getTaskIndices()
-            currentTaskIndices[0, ...] = currentTask
-            transferLayer.setTaskIndices(currentTaskIndices)
+                currentTaskIndices = transferLayer.getTaskIndices()
+                currentTaskIndices[0, ...] = currentTask
+                transferLayer.setTaskIndices(currentTaskIndices)
             
         return self.__computeQValues()[0]
 
