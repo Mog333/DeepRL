@@ -88,15 +88,17 @@ class DeepQTransferNetwork(object):
         # if self.clipDelta > 0:
             # targetDifference = targetDifference.clip(-1.0 * self.clipDelta, self.clipDelta)
 
-        quadraticPart = T.minimum(abs(targetDifference), self.clipDelta)
-        linearPart = abs(targetDifference) - quadraticPart
+        if self.clipDelta > 0:
+            quadraticPart = T.minimum(abs(targetDifference), self.clipDelta)
+            linearPart = abs(targetDifference) - quadraticPart
+            loss = 0.5 * quadraticPart ** 2 + self.clipDelta * linearPart
+        else:
+            loss = 0.5 * targetDifference ** 2
 
         if self.batchAccumulator == "sum":
-            loss = T.sum(0.5 * quadraticPart ** 2 + self.clipDelta * linearPart)
-            # loss = T.sum(targetDifference ** 2)
+            loss = T.sum(loss)
         elif self.batchAccumulator == "mean":
-            loss = T.mean(0.5 * quadraticPart ** 2 + self.clipDelta * linearPart)
-            # loss = T.mean(targetDifference ** 2)
+            loss = T.mean(loss)
         else:
             raise ValueError("Bad Network Accumulator. {sum, mean} expected")
 

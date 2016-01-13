@@ -255,15 +255,17 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoA
     framesElapsed       = 0
     totalEpisodeReward  = 0
     ale_game_over       = False
-    screenBuffer = np.zeros((2, 210, 160))
+    width, height = ale.getScreenDims()
+    screenBuffer = np.zeros((2, height, width), dtype=np.uint8)
+
     screenBufferIndex = 0
     frameSkipCounter = 0
     rewardPool = 0
+    reward = 0
     startingLives = -1
 
     if maxNoActions > 0:
         numNoActionsToTake = np.random.randint(0, maxNoActions)
-        reward = 0
         for x in xrange(numNoActionsToTake):
             ale.act(0)
 
@@ -274,28 +276,35 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoA
 
     preprocessedObservation = Preprocessing.resizeALEObservation(grayScreenObservation, agent.inputHeight, agent.inputWidth)
     action = agent.startEpisode(preprocessedObservation, currentEpisodeTask)
+    startingLives = ale.lives()
+
 
     while not ale_game_over and framesElapsed < stepsRemaining and framesElapsed < maxEpisodeDuration:
         framesElapsed += 1
         frameSkipCounter = 0
         while frameSkipCounter < frameSkip:
             rewardPool += ale.act(action)
+            # if not ale.game_over() and startingLives == -1:
+                # startingLives = ale.lives()
             screenObservation = ale.getScreenRGB()
             grayScreenObservation = Preprocessing.grayScaleALEObservation(screenObservation)
             screenBuffer[screenBufferIndex] = grayScreenObservation
             screenBufferIndex = (screenBufferIndex + 1) % 2
             frameSkipCounter += 1
+            if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
+                ale_game_over = True
+                break
 
         reward = rewardPool
         rewardPool = 0
 
         totalEpisodeReward += reward
 
-        if not ale.game_over() and startingLives == -1:
-            startingLives = ale.lives()
+        # if not ale.game_over() and startingLives == -1:
+        #     startingLives = ale.lives()
 
-        if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
-            ale_game_over = True
+        # if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
+        #     ale_game_over = True
 
         maxImage = np.maximum(screenBuffer[screenBufferIndex, ...], screenBuffer[screenBufferIndex - 1, ...])
         preprocessedObservation = Preprocessing.resizeALEObservation(maxImage, agent.inputHeight, agent.inputWidth)
@@ -303,7 +312,7 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoA
         action = agent.stepEpisode(reward, preprocessedObservation)
 
     ale.reset_game()
-    avgLoss = agent.endEpisode(0)
+    avgLoss = agent.endEpisode(reward)
 
     return framesElapsed, totalEpisodeReward, avgLoss
 

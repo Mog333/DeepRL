@@ -26,22 +26,6 @@ def createFlavorList(flavorString, availableFlavors):
                 flavorList.append(availableFlavors[num])
     return list(set(flavorList))
 
-# def createFlavorList(flavorString, maxNumFlavors):
-#     #Creates a list of number out of string for selecting modes/difficulties from a string parameter
-#     flavorList = []
-#     for s in flavorString.split(','):
-#         numRange = s.split('_')
-#         if len(numRange) == 1:
-#             flavorList.append(int(s))
-#         else:
-#             start = int(numRange[0])
-#             end = int(numRange[-1])
-#             if end == -1:
-#                 end = maxNumFlavors - 1
-#             for num in range(start, end + 1):
-#                 flavorList.append(num)
-#     return list(set(flavorList))
-
 class TransferTaskModule():
     def __init__(self, ale, gameList, difficultyString= "", modeString= "", taskBatchFlag = 0):
         self.ale = ale
@@ -95,7 +79,8 @@ class TransferTaskModule():
                     game["actionIndices"].append(self.allActionsList.index(action))
 
         self.currentGameIndex = 0
-        self.currentTaskIndex = 0 
+        self.currentTaskIndex = 0
+        self.changeToTask(self.currentTaskIndex)
 
     def getNumTasks(self):
         return self.numTasks
@@ -151,6 +136,7 @@ class TransferTaskModule():
         self.ale.loadROM(rom)
         self.ale.setMode(mode)
         self.ale.setDifficulty(diff)
+        self.ale.reset_game()
 
 
 

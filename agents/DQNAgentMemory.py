@@ -101,8 +101,8 @@ class DQNAgentMemory(object):
 
         experienceStateShape = (batchSize, self.phiLength) + self.stateShape
 
-        batchStates     = np.empty(experienceStateShape, dtype=floatX)
-        batchNextStates = np.empty(experienceStateShape, dtype=floatX)
+        batchStates     = np.empty(experienceStateShape, dtype='uint8')
+        batchNextStates = np.empty(experienceStateShape, dtype='uint8')
         batchRewards    = np.empty((batchSize, 1),       dtype=floatX)
         batchActions    = np.empty((batchSize, 1),       dtype='int32')
         batchNextActions= np.empty((batchSize, 1),       dtype='int32')
