@@ -291,7 +291,7 @@ def runEpisode(ale, agent, stepsRemaining, currentEpisodeTask, frameSkip, maxNoA
             screenBuffer[screenBufferIndex] = grayScreenObservation
             screenBufferIndex = (screenBufferIndex + 1) % 2
             frameSkipCounter += 1
-            if ale.game_over() or (agent.deathEndsEpisode and ale.lives() != startingLives):
+            if ale.game_over() or (agent.training == True and agent.deathEndsEpisode and ale.lives() != startingLives):
                 ale_game_over = True
                 break
 
