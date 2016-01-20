@@ -21,7 +21,7 @@ class Parameters:
     ALL_FLAVOR_STRING = ""
 
     TRANSFER_EXPERIMENT_TYPE = "fullShare"
-    DEATH_ENDS_EPISODE = True
+    DEATH_ENDS_EPISODE = False
     # ----------------------
     # ALE Parameters
     # ----------------------

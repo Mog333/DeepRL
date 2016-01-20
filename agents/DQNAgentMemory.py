@@ -164,7 +164,7 @@ class DQNAgentMemory(object):
           batchRewards[count]    = currentReturn
           batchActions[count]    = self.actionMemory[index]
           batchNextActions[count]= self.actionMemory[endIndex]
-          batchTerminals[count]  = not self.terminalMemory[endIndex]
+          batchTerminals[count]  = 1.0 - self.terminalMemory[endIndex]
           batchTasks[count]      = self.taskMemory[index]
 
           count += 1
